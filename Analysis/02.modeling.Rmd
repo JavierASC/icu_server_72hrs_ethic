@@ -813,8 +813,8 @@ importance <- varImp(fit_lr)
 ggplot(importance, aes(x = Overall, y = reorder(rownames(importance), Overall))) +
   geom_bar(stat = "identity", width = 0.5, fill = "blue") +
   labs(title = "IMPORTANCE OF THE MODEL VARIABLES",
-       x = "Relative importance (%)",
-       y = "Variables") +
+       x = "Variables",
+       y = "Relative importance (%)") +
   theme_minimal() +
   theme(axis.text.y = element_text(size = 7)) +
   coord_flip() 
@@ -2762,7 +2762,7 @@ str_glue("lr model F1 of SUBGROUP 15 (Other ethnicity) is {round(lr_F1_ethnicity
 
 ```
 
-## Comparative table Option B (MODIFICAR)
+## Comparative table Option B
 
 ```{r}
 
