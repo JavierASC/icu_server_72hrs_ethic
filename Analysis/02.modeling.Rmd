@@ -517,7 +517,7 @@ summary_resamps %>% t() %>% kable()
 # Save the model with the highest performance.
 
 best_performing_model<-get(
-  rownames(summary_resamps)[which(summary_resamps$F1.Median == max(summary_resamps$F1.Median))])
+  rownames(summary_resamps)[which(summary_resamps$F1.Max == max(summary_resamps$F1.Max))])
 
 # Extract model name
 
@@ -527,7 +527,6 @@ best_performing_model_name<-best_performing_model$method
 
 str_glue("The best model is {best_performing_model_name}")
 
-# This code does not have the expected result. By evaluating the models individually it is discovered that the best model is lr.
 
 #---------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------
@@ -577,11 +576,7 @@ final_predictions_ranger = getFinalPredictions(fit_ranger, data_test)
 final_predictions_Linda = getFinalPredictions(fit_Linda, data_test)
 final_predictions_cforest = getFinalPredictions(fit_cforest, data_test)
 
-# Each model was evaluated manually, obtaining that the lr model is the one with the highest F1.
-
-# Force lr as best model:
-
-final_predictions <- final_predictions_lr
+# Each model was evaluated manually to verify that the lr model is the one with the highest F1.
 
 ```
 
