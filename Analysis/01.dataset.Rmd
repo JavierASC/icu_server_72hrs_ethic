@@ -144,6 +144,11 @@ dfs_to_join <- list(basic_demographics, clearance_pivoted_vitals, icu_mortality_
 # Perform a left join
 dataframe_for_modeling <- Reduce(function(x, y) merge(x, y, by = "patientunitstayid", all.x = TRUE), dfs_to_join)
 
+
+# Initial number of patients
+
+a <- as.numeric(nrow(dataframe_for_modeling))
+
 ```
 
 
@@ -727,10 +732,14 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 dataframe_for_modeling$sex <- as.factor(dataframe_for_modeling$sex)
 
 
-# Filter age by >16 years (it is an exclusion criterion)
+# Exclusion Criteria 1: Filter age by >16 years (it is an exclusion criterion)
 
 dataframe_for_modeling <- dataframe_for_modeling %>% 
   filter(age > 16)
+
+
+# Patients after Exclusion Criteria 1
+b <- as.numeric(nrow(dataframe_for_modeling))
 
 ```
 
@@ -739,10 +748,14 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 
 ```{r}
 
-# Filter Na
+# Exclusion Criteria 2: remove NA rows in the variable "sex"
 
 dataframe_for_modeling <- dataframe_for_modeling %>%
   filter(!is.na(sex))
+
+# Patients after Exclusion Criteria 2
+c <- as.numeric(nrow(dataframe_for_modeling))
+
 
 # Remove NA from the variable icu_mortality_72hrs
 
@@ -916,6 +929,38 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 
 ```
 
+# Flowchart
+
+```{r}
+
+a <- 200859
+b <- 200468
+c <- 200380
+
+title <- "Inclusion and Exclusion Criteria Flowchart"
+
+
+flowchart_code <- sprintf("
+digraph flowchart {
+  labelloc=\"t\";  //                                                                          Position of the title
+  label=\"%s\";   //                                                                           Title
+  //                                                                                           Title style
+  graph [fontname = 'Arial', fontsize = 20, fontcolor = 'black', color = 'transparent'];
+  node [shape = box, fontname = 'Arial', fontsize = 12, color = 'black'];
+  a [label = 'Initial number of patients: %d'];
+  b [label = 'Patients >=16: %d'];
+  c [label = 'Elimination of NA in the sex variable: %d'];
+
+  a -> b;
+  b -> c;
+}
+", title, a, b, c)
+
+
+# Flowchart
+
+grViz(flowchart_code)
+```
 
 
 # 8. EXTRACT DATAFRAME
