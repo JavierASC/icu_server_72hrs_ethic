@@ -636,8 +636,6 @@ print(comparative_table)
 
 The selected model is lr (LogitBoost).
 
-You can avoid this code if you have saved the model (run the next section of the code in this case).
-
 ```{r}
 
 # Training and predictions ONLY of the created model
