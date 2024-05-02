@@ -471,7 +471,7 @@ h_modeling <- as.numeric(difftime(h_end, h_start_gbm, units = "hours"))
 saveRDS(fit_gbm, file = "gbm_model.Rda")
 saveRDS(fit_rf, file = "rf_model.Rda")
 saveRDS(fit_xgb, file = "xgb_model.Rda")
-# saveRDS(fit_lr, file = "lr_model.Rda") # Runs later
+saveRDS(fit_lr, file = "lr_model.Rda") # Runs later again
 saveRDS(fit_lda, file = "lda_model.Rda")
 saveRDS(fit_kernelpls, file = "kernelpls_model.Rda")
 saveRDS(fit_ranger, file = "ranger_model.Rda")
@@ -658,54 +658,15 @@ hora_fin_seleccionado <- Sys.time()
 
 #---
 
-# I add a code to save and load the model.
+# SAVE THE MODEL
 
-# SAVE THE MODEL: you can save the model so you don't have to run it again.
+# You can save the model so you don't have to run it again.
 
 saveRDS(fit_lr, file = "lr_model.Rda")
 
-#---
-
-# CREATE THE getFinalPredictions FUNCTION.
-
-getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.5){                    # Change the fit to the best_model. 
-                                                                                           
-  prediction_probabilities_tmp = predict(fit_lr, newdata=data_test, type = "prob")        
-
-  rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
-
-  # Match the prediction with current data.
-  
-  final_predictions_tmp = tibble(ID         = data_test$patientunitstayid,                
-                                 trueStatus = data_test$icu_mortality_72hrs,               # Change target variable
-                                 obs        = if_else(trueStatus == "Expired",1,0))        # If Expired, enter 1.
-
-  final_predictions_tmp = cbind(final_predictions_tmp,                                    
-                                prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
-                                                                   rownames(prediction_probabilities_tmp)),])
-  
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
-  
-  final_predictions_tmp
-}
-
-# End of function
-
-final_predictions_lr = getFinalPredictions(fit_lr, data_test)
-final_predictions <- final_predictions_lr
-
-```
-
-
-# LOAD THE SELECTED MODEL (only if you have run "TRAINING ONLY OF THE SELECTED MODEL")
-
-You can load the trained model if you have already trained it in a previous session.This saves training time.
-The training of the model is in the previous section.
-
-```{r}
-
 # UPLOAD THE MODEL
+
+# If you have run model training previously you can load the saved model to save time.
 
 fit_lr <- readRDS("lr_model.Rda")
 
@@ -741,7 +702,6 @@ final_predictions_lr = getFinalPredictions(fit_lr, data_test)
 final_predictions <- final_predictions_lr
 
 ```
-
 
 
 # CONFUSION MATRIX OF THE ALREADY CHOSEN MODEL
