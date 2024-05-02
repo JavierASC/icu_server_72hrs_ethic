@@ -581,13 +581,188 @@ final_predictions_cforest = getFinalPredictions(fit_cforest, data_test)
 ```
 
 
+# CONFUSION MATRIX OF ALL MODELS
+
+```{r}
+
+# gbm CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_gbm$obs <- as.factor(final_predictions_gbm$obs)
+
+# mortality_prediction_B
+final_predictions_gbm$pred <- as.factor(final_predictions_gbm$pred)
+
+# confusion matrix
+
+matrix_gbm <- confusionMatrix(final_predictions_gbm$pred, final_predictions_gbm$obs, mode = "everything")
+
+#---
+
+# rf CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_rf$obs <- as.factor(final_predictions_rf$obs)
+
+# mortality_prediction_B
+final_predictions_rf$pred <- as.factor(final_predictions_rf$pred)
+
+# confusion matrix
+
+matrix_rf <- confusionMatrix(final_predictions_rf$pred, final_predictions_rf$obs, mode = "everything")
+
+#---
+
+# xgb CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_xgb$obs <- as.factor(final_predictions_xgb$obs)
+
+# mortality_prediction_B
+final_predictions_xgb$pred <- as.factor(final_predictions_xgb$pred)
+
+# confusion matrix
+
+matrix_xgb <- confusionMatrix(final_predictions_xgb$pred, final_predictions_xgb$obs, mode = "everything")
+
+#---
+
+# lr CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_lr$obs <- as.factor(final_predictions_lr$obs)
+
+# mortality_prediction_B
+final_predictions_lr$pred <- as.factor(final_predictions_lr$pred)
+
+# confusion matrix
+
+matrix_lr <- confusionMatrix(final_predictions_lr$pred, final_predictions_lr$obs, mode = "everything")
+
+#---
+
+# lda CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_lda$obs <- as.factor(final_predictions_lda$obs)
+
+# mortality_prediction_B
+final_predictions_lda$pred <- as.factor(final_predictions_lda$pred)
+
+# confusion matrix
+
+matrix_lda <- confusionMatrix(final_predictions_lda$pred, final_predictions_lda$obs, mode = "everything")
+
+#---
+
+# kernelpls CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_kernelpls$obs <- as.factor(final_predictions_kernelpls$obs)
+
+# mortality_prediction_B
+final_predictions_kernelpls$pred <- as.factor(final_predictions_kernelpls$pred)
+
+# confusion matrix
+
+matrix_kernelpls <- confusionMatrix(final_predictions_kernelpls$pred, final_predictions_kernelpls$obs, mode = "everything")
+
+#---
+
+# ranger CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_ranger$obs <- as.factor(final_predictions_ranger$obs)
+
+# mortality_prediction_B
+final_predictions_ranger$pred <- as.factor(final_predictions_ranger$pred)
+
+# confusion matrix
+
+matrix_ranger <- confusionMatrix(final_predictions_ranger$pred, final_predictions_ranger$obs, mode = "everything")
+
+#---
+
+# Linda CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_Linda$obs <- as.factor(final_predictions_Linda$obs)
+
+# mortality_prediction_B
+final_predictions_Linda$pred <- as.factor(final_predictions_Linda$pred)
+
+# confusion matrix
+
+matrix_Linda <- confusionMatrix(final_predictions_Linda$pred, final_predictions_Linda$obs, mode = "everything")
+
+#---
+
+# cforest CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_cforest$obs <- as.factor(final_predictions_cforest$obs)
+
+# mortality_prediction_B
+final_predictions_cforest$pred <- as.factor(final_predictions_cforest$pred)
+
+# confusion matrix
+
+matrix_cforest <- confusionMatrix(final_predictions_cforest$pred, final_predictions_cforest$obs, mode = "everything")
+
+```
+
+
 # COMPARATIVE TABLE
 
 ```{r}
 
+# PRECISION
+
+gbm_Precision <- matrix_gbm$table[1, 1] / sum(matrix_gbm$table[1, ])
+rf_Precision <- matrix_rf$table[1, 1] / sum(matrix_rf$table[1, ])
+xgb_Precision <- matrix_xgb$table[1, 1] / sum(matrix_xgb$table[1, ])
+lr_Precision <- matrix_lr$table[1, 1] / sum(matrix_lr$table[1, ])
+lda_Precision <- matrix_lda$table[1, 1] / sum(matrix_lda$table[1, ])
+kernelpls_Precision <- matrix_kernelpls$table[1, 1] / sum(matrix_kernelpls$table[1, ])
+ranger_Precision <- matrix_ranger$table[1, 1] / sum(matrix_ranger$table[1, ])
+Linda_Precision <- matrix_Linda$table[1, 1] / sum(matrix_Linda$table[1, ])
+cforest_Precision <- matrix_cforest$table[1, 1] / sum(matrix_cforest$table[1, ])
+
+
+# RECALL
+
+gbm_recall <- matrix_gbm$table[1, 1] / sum(matrix_gbm$table[, 1])
+rf_recall <- matrix_rf$table[1, 1] / sum(matrix_rf$table[, 1])
+xgb_recall <- matrix_xgb$table[1, 1] / sum(matrix_xgb$table[, 1])
+lr_recall <- matrix_lr$table[1, 1] / sum(matrix_lr$table[, 1])
+lda_recall <- matrix_lda$table[1, 1] / sum(matrix_lda$table[, 1])
+kernelpls_recall <- matrix_kernelpls$table[1, 1] / sum(matrix_kernelpls$table[, 1])
+ranger_recall <- matrix_ranger$table[1, 1] / sum(matrix_ranger$table[, 1])
+Linda_recall <- matrix_Linda$table[1, 1] / sum(matrix_Linda$table[, 1])
+cforest_recall <- matrix_cforest$table[1, 1] / sum(matrix_cforest$table[, 1])
+
+
 # PARAMETER F1.
 
-gbm_F1 <-F1_Score(final_predictions_gbm$obs, final_predictions_gbm$pred)
+gbm_F1 <-F1_Score(final_predictions_gbm$obs, final_predictions_gbm$recall)
 rf_F1 <-F1_Score(final_predictions_rf$obs, final_predictions_rf$pred)
 xgb_F1 <-F1_Score(final_predictions_xgb$obs, final_predictions_xgb$pred)
 lr_F1 <-F1_Score(final_predictions_lr$obs, final_predictions_lr$pred)
@@ -597,19 +772,6 @@ ranger_F1 <-F1_Score(final_predictions_ranger$obs, final_predictions_ranger$pred
 Linda_F1 <-F1_Score(final_predictions_Linda$obs, final_predictions_Linda$pred)
 cforest_F1 <-F1_Score(final_predictions_cforest$obs, final_predictions_cforest$pred)
 
-
-# PERCENTAGE (%) OF SUCCESSFUL
-
-gbm_success <- mean(final_predictions_gbm$obs == final_predictions_gbm$pred)*100
-rf_success <- mean(final_predictions_rf$obs == final_predictions_rf$pred)*100
-xgb_success <- mean(final_predictions_xgb$obs == final_predictions_xgb$pred)*100
-lr_success <- mean(final_predictions_lr$obs == final_predictions_lr$pred)*100
-lda_success <- mean(final_predictions_lda$obs == final_predictions_lda$pred)*100
-kernelpls_success <- mean(final_predictions_kernelpls$obs == final_predictions_kernelpls$pred)*100
-ranger_success <- mean(final_predictions_ranger$obs == final_predictions_ranger$pred)*100
-Linda_success <- mean(final_predictions_Linda$obs == final_predictions_Linda$pred)*100
-cforest_success <- mean(final_predictions_cforest$obs == final_predictions_cforest$pred)*100
-
 #-------------------------------------------------------------------------------
 
 # CREATE THE TABLE
@@ -617,14 +779,18 @@ cforest_success <- mean(final_predictions_cforest$obs == final_predictions_cfore
 # Models
 Models <- c("lr", "cforest", "lda", "kernelpls", "Linda", "gbm", "xgb", "ranger", "rf")
 
+# Precision
+Precision <- round(c(lr_Precision, cforest_Precision, lda_Precision, kernelpls_Precision, Linda_Precision, gbm_Precision, xgb_Precision, ranger_Precision, rf_Precision),3)
+
+# Recall
+Recall <- round(c(lr_recall, cforest_recall, lda_recall, kernelpls_recall, Linda_recall, gbm_recall, xgb_recall, ranger_recall, rf_recall),3)
+
 # F1 score
 F1 <- round(c(lr_F1, cforest_F1, lda_F1, kernelpls_F1, Linda_F1, gbm_F1, xgb_F1, ranger_F1, rf_F1),3)
 
-# Success
-success <- round(c(lr_success, cforest_success, lda_success, kernelpls_success, Linda_success, gbm_success, xgb_success, ranger_success, rf_success),2)
 
 # Dataframe
-comparative_table <- data.frame(Models = Models, F1 = F1, Success = paste0(success, "%"))
+comparative_table <- data.frame(Models = Models, Precision = Precision, Recall = Recall, F1 = F1)
 
 print(comparative_table)
 
@@ -1135,7 +1301,7 @@ levels(final_predictions_male$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_male$pred, final_predictions_male$obs, mode = "everything")
+matrix_1 <- confusionMatrix(final_predictions_male$pred, final_predictions_male$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1150,6 +1316,16 @@ lr_F1_male <-F1_Score(final_predictions_lr_male$obs, final_predictions_lr_male$p
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_male, digits = 3)}")
+
+
+
+# PRECISION
+
+m1_Precision <- matrix_1$table[1, 1] / sum(matrix_1$table[1, ])
+
+# RECALL
+
+m1_recall <- matrix_1$table[1, 1] / sum(matrix_1$table[, 1])
 
 ```
 
@@ -1248,7 +1424,7 @@ levels(final_predictions_female$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_female$pred, final_predictions_female$obs, mode = "everything")
+matrix_2 <- confusionMatrix(final_predictions_female$pred, final_predictions_female$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1263,6 +1439,16 @@ lr_F1_female <-F1_Score(final_predictions_lr_female$obs, final_predictions_lr_fe
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_female, digits = 3)}")
+
+
+
+# PRECISION
+
+m2_Precision <- matrix_2$table[1, 1] / sum(matrix_2$table[1, ])
+
+# RECALL
+
+m2_recall <- matrix_2$table[1, 1] / sum(matrix_2$table[, 1])
 
 ```
 
@@ -1364,7 +1550,7 @@ levels(final_predictions_adolescence$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_adolescence$pred, final_predictions_adolescence$obs, mode = "everything")
+matrix_4 <- confusionMatrix(final_predictions_adolescence$pred, final_predictions_adolescence$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1379,6 +1565,16 @@ lr_F1_adolescence <-F1_Score(final_predictions_lr_adolescence$obs, final_predict
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_adolescence, digits = 3)}")
+
+
+
+# PRECISION
+
+m4_Precision <- matrix_4$table[1, 1] / sum(matrix_4$table[1, ])
+
+# RECALL
+
+m4_recall <- matrix_4$table[1, 1] / sum(matrix_4$table[, 1])
 
 ```
 
@@ -1480,7 +1676,7 @@ levels(final_predictions_youth$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_youth$pred, final_predictions_youth$obs, mode = "everything")
+matrix_5 <- confusionMatrix(final_predictions_youth$pred, final_predictions_youth$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1495,6 +1691,16 @@ lr_F1_youth <-F1_Score(final_predictions_lr_youth$obs, final_predictions_lr_yout
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_youth, digits = 3)}")
+
+
+
+# PRECISION
+
+m5_Precision <- matrix_5$table[1, 1] / sum(matrix_5$table[1, ])
+
+# RECALL
+
+m5_recall <- matrix_5$table[1, 1] / sum(matrix_5$table[, 1])
 
 ```
 
@@ -1596,7 +1802,7 @@ levels(final_predictions_adulthood$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_adulthood$pred, final_predictions_adulthood$obs, mode = "everything")
+matrix_6 <- confusionMatrix(final_predictions_adulthood$pred, final_predictions_adulthood$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1611,6 +1817,16 @@ lr_F1_adulthood<-F1_Score(final_predictions_lr_adulthood$obs, final_predictions_
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_adulthood, digits = 3)}")
+
+
+
+# PRECISION
+
+m6_Precision <- matrix_6$table[1, 1] / sum(matrix_6$table[1, ])
+
+# RECALL
+
+m6_recall <- matrix_6$table[1, 1] / sum(matrix_6$table[, 1])
 
 ```
 
@@ -1711,7 +1927,7 @@ levels(final_predictions_old_age$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_old_age$pred, final_predictions_old_age$obs, mode = "everything")
+matrix_7 <- confusionMatrix(final_predictions_old_age$pred, final_predictions_old_age$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1726,6 +1942,16 @@ lr_F1_old_age <-F1_Score(final_predictions_lr_old_age$obs, final_predictions_lr_
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_old_age, digits = 3)}")
+
+
+
+# PRECISION
+
+m7_Precision <- matrix_7$table[1, 1] / sum(matrix_7$table[1, ])
+
+# RECALL
+
+m7_recall <- matrix_7$table[1, 1] / sum(matrix_7$table[, 1])
 
 ```
 
@@ -1826,7 +2052,7 @@ levels(final_predictions_teach_true$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_teach_true$pred, final_predictions_teach_true$obs, mode = "everything")
+matrix_8 <- confusionMatrix(final_predictions_teach_true$pred, final_predictions_teach_true$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1841,6 +2067,16 @@ lr_F1_teach_true <-F1_Score(final_predictions_lr_teach_true$obs, final_predictio
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_teach_true, digits = 3)}")
+
+
+
+# PRECISION
+
+m8_Precision <- matrix_8$table[1, 1] / sum(matrix_8$table[1, ])
+
+# RECALL
+
+m8_recall <- matrix_8$table[1, 1] / sum(matrix_8$table[, 1])
 
 ```
 
@@ -1941,7 +2177,7 @@ levels(final_predictions_teach_false$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_teach_false$pred, final_predictions_teach_false$obs, mode = "everything")
+matrix_9 <- confusionMatrix(final_predictions_teach_false$pred, final_predictions_teach_false$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -1956,6 +2192,16 @@ lr_F1_teach_false <-F1_Score(final_predictions_lr_teach_false$obs, final_predict
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_teach_false, digits = 3)}")
+
+
+
+# PRECISION
+
+m9_Precision <- matrix_9$table[1, 1] / sum(matrix_9$table[1, ])
+
+# RECALL
+
+m9_recall <- matrix_9$table[1, 1] / sum(matrix_9$table[, 1])
 
 ```
 
@@ -2056,7 +2302,7 @@ levels(final_predictions_african_american$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_african_american$pred, final_predictions_african_american$obs, mode = "everything")
+matrix_10 <- confusionMatrix(final_predictions_african_american$pred, final_predictions_african_american$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -2071,6 +2317,16 @@ lr_F1_african_american <-F1_Score(final_predictions_lr_african_american$obs, fin
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_african_american, digits = 3)}")
+
+
+
+# PRECISION
+
+m10_Precision <- matrix_10$table[1, 1] / sum(matrix_10$table[1, ])
+
+# RECALL
+
+m10_recall <- matrix_10$table[1, 1] / sum(matrix_10$table[, 1])
 
 ```
 
@@ -2171,7 +2427,7 @@ levels(final_predictions_asian$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_asian$pred, final_predictions_asian$obs, mode = "everything")
+matrix_11 <- confusionMatrix(final_predictions_asian$pred, final_predictions_asian$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -2186,6 +2442,16 @@ lr_F1_asian <-F1_Score(final_predictions_lr_asian$obs, final_predictions_lr_asia
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_asian, digits = 3)}")
+
+
+
+# PRECISION
+
+m11_Precision <- matrix_11$table[1, 1] / sum(matrix_11$table[1, ])
+
+# RECALL
+
+m11_recall <- matrix_11$table[1, 1] / sum(matrix_11$table[, 1])
 
 ```
 
@@ -2286,7 +2552,7 @@ levels(final_predictions_caucasian$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_caucasian$pred, final_predictions_caucasian$obs, mode = "everything")
+matrix_12 <- confusionMatrix(final_predictions_caucasian$pred, final_predictions_caucasian$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -2301,6 +2567,16 @@ lr_F1_caucasian <-F1_Score(final_predictions_lr_caucasian$obs, final_predictions
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_caucasian, digits = 3)}")
+
+
+
+# PRECISION
+
+m12_Precision <- matrix_12$table[1, 1] / sum(matrix_12$table[1, ])
+
+# RECALL
+
+m12_recall <- matrix_12$table[1, 1] / sum(matrix_12$table[, 1])
 
 ```
 
@@ -2401,7 +2677,7 @@ levels(final_predictions_hispanic$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_hispanic$pred, final_predictions_hispanic$obs, mode = "everything")
+matrix_13 <- confusionMatrix(final_predictions_hispanic$pred, final_predictions_hispanic$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -2416,6 +2692,16 @@ lr_F1_hispanic <-F1_Score(final_predictions_lr_hispanic$obs, final_predictions_l
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_hispanic, digits = 3)}")
+
+
+
+# PRECISION
+
+m13_Precision <- matrix_13$table[1, 1] / sum(matrix_13$table[1, ])
+
+# RECALL
+
+m13_recall <- matrix_13$table[1, 1] / sum(matrix_13$table[, 1])
 
 ```
 
@@ -2516,7 +2802,7 @@ levels(final_predictions_native_american$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_native_american$pred, final_predictions_native_american$obs, mode = "everything")
+matrix_14 <- confusionMatrix(final_predictions_native_american$pred, final_predictions_native_american$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -2531,6 +2817,16 @@ lr_F1_native_american <-F1_Score(final_predictions_lr_native_american$obs, final
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_native_american, digits = 3)}")
+
+
+
+# PRECISION
+
+m14_Precision <- matrix_14$table[1, 1] / sum(matrix_14$table[1, ])
+
+# RECALL
+
+m14_recall <- matrix_14$table[1, 1] / sum(matrix_14$table[, 1])
 
 ```
 
@@ -2631,7 +2927,7 @@ levels(final_predictions_ethnicity_other$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions_ethnicity_other$pred, final_predictions_ethnicity_other$obs, mode = "everything")
+matrix_15 <- confusionMatrix(final_predictions_ethnicity_other$pred, final_predictions_ethnicity_other$obs, mode = "everything")
 
 
 # 6. PERCENTAGE (%) OF SUCCESSFUL
@@ -2646,6 +2942,16 @@ lr_F1_ethnicity_other <-F1_Score(final_predictions_lr_ethnicity_other$obs, final
 # PRINT
 
 str_glue("lr model F1 is {round(lr_F1_ethnicity_other, digits = 3)}")
+
+
+
+# PRECISION
+
+m15_Precision <- matrix_15$table[1, 1] / sum(matrix_15$table[1, ])
+
+# RECALL
+
+m15_recall <- matrix_15$table[1, 1] / sum(matrix_15$table[, 1])
 
 ```
 
@@ -2779,14 +3085,18 @@ success_ethnicity_other <- mean(final_predictions_ethnicity_other$obs == final_p
 # Models
 Groups <- c("Male", "Female", "Adolescence", "Youth", "Adulthood", "Old Age", "Teach True", "Teach False", "African American", "Asian", "Caucasian", "Hispanic", "Native American", "Ethnicity Other")
 
+# Precision
+Precision <- round(c(m1_Precision, m2_Precision, m4_Precision, m5_Precision, m6_Precision, m7_Precision, m8_Precision, m9_Precision, m10_Precision, m11_Precision, m12_Precision, m13_Precision, m14_Precision, m15_Precision),3)
+
+# Recall
+Recall <- round(c(m1_recall, m2_recall, m4_recall, m5_recall, m6_recall, m7_recall, m8_recall, m9_recall, m10_recall, m11_recall, m12_recall, m13_recall, m14_recall, m15_recall),3)
+
 # F1 parameter
 F1 <- round(c(lr_F1_male, lr_F1_female, lr_F1_adolescence, lr_F1_youth, lr_F1_adulthood, lr_F1_old_age, lr_F1_teach_true, lr_F1_teach_false, lr_F1_african_american, lr_F1_asian, lr_F1_caucasian, lr_F1_hispanic, lr_F1_native_american, lr_F1_ethnicity_other),3)
 
-# Success
-success <- round(c(success_male, success_female, success_adolescence, success_youth, success_adulthood, success_old_age, success_teach_true, success_teach_false, success_african_american, success_asian, success_caucasian, success_hispanic, success_native_american, success_ethnicity_other),3)
 
 # Dataframe
-comparative_option_B <- data.frame(Groups = Groups, F1 = F1, Success = paste0(success, "%"))
+comparative_option_B <- data.frame(Groups = Groups, Precision = Precision, Recall = Recall, F1 = F1)
 
 print(comparative_option_B)
 
