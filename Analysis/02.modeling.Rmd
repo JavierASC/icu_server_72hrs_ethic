@@ -58,6 +58,7 @@ library(Hmisc)
 library(janitor)
 library(lattice)
 library(magrittr)
+library(MLeval)
 library(mlbench)
 library(MLmetrics)
 library(naniar)
@@ -891,6 +892,46 @@ levels(final_predictions$pred)
 confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everything")
 
 ```
+
+# PRECISION-RECALL CURVE
+
+```{r}
+
+# Function to calculate precision and recall for different classification thresholds.
+calculate_precision_recall <- function(predictions, true_labels) {
+  df <- tibble(pred = predictions, true = true_labels)                   # 2 vectors: real observation and predictions.
+  
+  df <- df %>%                                      # Calculation of true positives (TP), false positives (FP) and false negatives (FN)
+    mutate(TP = ifelse(pred == 1 & true == 1, 1, 0),
+           FP = ifelse(pred == 1 & true == 0, 1, 0),
+           FN = ifelse(pred == 0 & true == 1, 1, 0))
+  
+  precision <- cumsum(df$TP) / (cumsum(df$TP) + cumsum(df$FP))   # Cumulative precision and recall for each classification threshold
+  recall <- cumsum(df$TP) / sum(df$true == 1)
+  
+  df <- tibble(threshold = predictions, precision = precision, recall = recall)   # 3 colums tibble
+  
+  return(df)
+}
+
+
+
+# Calculate precision and recall for different thresholds
+
+precision_recall_df <- calculate_precision_recall(final_predictions_lr$pred, final_predictions_lr$obs)
+
+
+# Precision versus recall graph
+
+ggplot(precision_recall_df, aes(x = recall, y = precision)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Recall", y = "Precision") +
+  ggtitle("Precision vs. Recall Curve")
+
+```
+
+
 
 # EVALUATION: PERCENTAGE OF CORRECT PREDICTION AND F1
 
