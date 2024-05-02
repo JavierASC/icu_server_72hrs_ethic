@@ -147,7 +147,7 @@ dataframe_for_modeling <- Reduce(function(x, y) merge(x, y, by = "patientunitsta
 
 # Initial number of patients
 
-a <- as.numeric(nrow(dataframe_for_modeling))
+ab <- as.numeric(nrow(dataframe_for_modeling))
 
 ```
 
@@ -929,13 +929,9 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 
 ```
 
-# Flowchart
+# 7. FLOWCHART
 
 ```{r}
-
-a <- 200859
-b <- 200468
-c <- 200380
 
 title <- "Inclusion and Exclusion Criteria Flowchart"
 
@@ -947,14 +943,14 @@ digraph flowchart {
   //                                                                                           Title style
   graph [fontname = 'Arial', fontsize = 20, fontcolor = 'black', color = 'transparent'];
   node [shape = box, fontname = 'Arial', fontsize = 12, color = 'black'];
-  a [label = 'Initial number of patients: %d'];
+  ab [label = 'Initial number of patients: %d'];
   b [label = 'Patients >=16: %d'];
   c [label = 'Elimination of NA in the sex variable: %d'];
 
-  a -> b;
+  ab -> b;
   b -> c;
 }
-", title, a, b, c)
+", title, ab, b, c)
 
 
 # Flowchart
