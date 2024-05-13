@@ -104,6 +104,39 @@ df_for_table1$ethnicity <- as.factor(df_for_table1$ethnicity)
 
 ```
 
+#             CORRECTION OF THE 0, 1 FACTOR VARIABLES
+
+```{r}
+
+df_for_table1 <- df_for_table1 %>%
+  mutate(
+    sex = ifelse(sex == 1, 0, 1),
+    norepinephrine = ifelse(norepinephrine == 1, 0, 1),
+    phenylephrine = ifelse(phenylephrine == 1, 0, 1),
+    heparin = ifelse(heparin == 1, 0, 1),
+    warfarin = ifelse(warfarin == 1, 0, 1),
+    vasopressors_other_bin = ifelse(vasopressors_other_bin == 1, 0, 1),
+    hist_diabetes_bin = ifelse(hist_diabetes_bin == 1, 0, 1),
+    hist_chf_bin = ifelse(hist_chf_bin == 1, 0, 1),
+    hist_copd_bin = ifelse(hist_copd_bin == 1, 0, 1),
+    hist_cancer_bin = ifelse(hist_cancer_bin == 1, 0, 1),
+    hist_renal_bin = ifelse(hist_renal_bin == 1, 0, 1),
+    hist_other_bin = ifelse(hist_other_bin == 1, 0, 1),
+    CABG = ifelse(CABG == 1, 0, 1),
+    Cardiac_arrest = ifelse(Cardiac_arrest == 1, 0, 1),
+    CHF = ifelse(CHF == 1, 0, 1),
+    CVA = ifelse(CVA == 1, 0, 1),
+    Diabetic_ketoacidosis = ifelse(Diabetic_ketoacidosis == 1, 0, 1),
+    MI = ifelse(MI == 1, 0, 1),
+    Rhythm_disturbance = ifelse(Rhythm_disturbance == 1, 0, 1),
+    Sepsis_renal = ifelse(Sepsis_renal == 1, 0, 1),
+    Sepsis_pulmonary = ifelse(Sepsis_pulmonary == 1, 0, 1),
+    apache_other = ifelse(apache_other == 1, 0, 1)
+  )
+
+
+```
+
 
 # TABLE 1
 
