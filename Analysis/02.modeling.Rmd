@@ -156,6 +156,39 @@ resultados_dataframe <- data.frame(Columna = colnames(final_df_selected_PCA),
 
 ```
 
+#             CORRECTION OF THE 0, 1 FACTOR VARIABLES
+
+```{r}
+
+final_df_selected <- final_df_selected %>%
+  mutate(
+    sex = ifelse(sex == 1, 0, 1),
+    norepinephrine = ifelse(norepinephrine == 1, 0, 1),
+    phenylephrine = ifelse(phenylephrine == 1, 0, 1),
+    heparin = ifelse(heparin == 1, 0, 1),
+    warfarin = ifelse(warfarin == 1, 0, 1),
+    vasopressors_other_bin = ifelse(vasopressors_other_bin == 1, 0, 1),
+    hist_diabetes_bin = ifelse(hist_diabetes_bin == 1, 0, 1),
+    hist_chf_bin = ifelse(hist_chf_bin == 1, 0, 1),
+    hist_copd_bin = ifelse(hist_copd_bin == 1, 0, 1),
+    hist_cancer_bin = ifelse(hist_cancer_bin == 1, 0, 1),
+    hist_renal_bin = ifelse(hist_renal_bin == 1, 0, 1),
+    hist_other_bin = ifelse(hist_other_bin == 1, 0, 1),
+    CABG = ifelse(CABG == 1, 0, 1),
+    Cardiac_arrest = ifelse(Cardiac_arrest == 1, 0, 1),
+    CHF = ifelse(CHF == 1, 0, 1),
+    CVA = ifelse(CVA == 1, 0, 1),
+    Diabetic_ketoacidosis = ifelse(Diabetic_ketoacidosis == 1, 0, 1),
+    MI = ifelse(MI == 1, 0, 1),
+    Rhythm_disturbance = ifelse(Rhythm_disturbance == 1, 0, 1),
+    Sepsis_renal = ifelse(Sepsis_renal == 1, 0, 1),
+    Sepsis_pulmonary = ifelse(Sepsis_pulmonary == 1, 0, 1),
+    apache_other = ifelse(apache_other == 1, 0, 1)
+  )
+
+
+```
+
 
 
 #               CHANGE THE COLUMNS BACK TO FACTOR TYPE AGAIN
@@ -205,6 +238,7 @@ final_df_selected$ethnicity <- as.factor(final_df_selected$ethnicity)
 
 ```
 
+
 # REDUCTION OF VARIABLES
 
 ```{r}
@@ -236,6 +270,13 @@ final_df_selected <- final_df_selected %>%
 # stview(dfSummary(final_df_selected))
 
 ```
+
+Factor variables:
+
+icu_mortality_72hrs (Alive: 0 / Exxpired: 1)
+Sex (Male: 0 / Female: 1)
+ethnicity (African American: 0 / Asian: 1 / Caucasian: 2 / Hispanic: 3 / Native American: 4 / Other/Unknown: 5)
+teachingstatus (FALSE: 0   TRUE: 1)
 
 
 
@@ -995,7 +1036,7 @@ ggplot(importance, aes(x = Overall, y = reorder(rownames(importance), Overall)))
 
 pred_male <- data_test %>%
   cbind(final_predictions) %>%
-  filter(sex == 1)
+  filter(sex == 0)
 
 # PERCENTAGE (%) OF SUCCESS
 
@@ -1009,7 +1050,7 @@ str_glue("The percentage of correct answers only for males is {round(success_mal
 
 pred_female <- data_test %>%
   cbind(final_predictions) %>%
-  filter(sex == 2)
+  filter(sex == 1)
 
 # PERCENTAGE (%) OF SUCCESS
 
@@ -1258,7 +1299,7 @@ set.seed(123)
 #-------------------------------------------------------------------------------
 
 final_df_male <- final_df_selected %>%
-  filter(sex == 1)
+  filter(sex == 0)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -1381,7 +1422,7 @@ set.seed(123)
 #-------------------------------------------------------------------------------
 
 final_df_female <- final_df_selected %>%
-  filter(sex == 2)
+  filter(sex == 1)
 
 # 1. TRAIN-TEST SELECTION
 
