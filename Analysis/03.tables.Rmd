@@ -181,12 +181,13 @@ table1_base <- print(CreateTableOne(vars = vars_in_table1,
 
 # The line add_header_above() will need to be modified depending on the number of columns of the table.
 
+# Run this IN CONSOLE for html output:
+
  starification_cats<-n_distinct(table1_dataset[,stratifyby])
 table1_base %>%
   kbl(caption = "Table 1 of base model" , align = "c") %>%
   kable_classic_2(full_width = F, html_font = "Cambria")%>%
   add_header_above(c(" "," ", 'ICU mortality' = starification_cats," ", "", "" ))
-
 
 ```
 
