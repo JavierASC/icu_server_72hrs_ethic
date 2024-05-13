@@ -118,44 +118,6 @@ NA_by_column <- colSums(is.na(final_df_selected))
 
 ```
 
-# Principal Component Analysis (PCA)
-
-```{r}
-
-# THE DATA MUST BE NUMERIC, NOT FACTOR.
-
-# patientunitstayid and icu_mortality_72hrs are removed as they are not study variables.
-
-final_df_selected_PCA <- final_df_selected %>%
-  select(-patientunitstayid, -icu_mortality_72hrs)
-
-# Remove numbedscategory and region (missing values)
-
-final_df_selected_PCA <- final_df_selected %>%
-  select(-numbedscategory, -region)
-
-# Apply PCA 
-
-pca_result <- prcomp(final_df_selected_PCA, scale = TRUE) 
-
-# Calculate the percentage of variability explained
-
-porcentaje_var_explicada <- pca_result$sdev^2 / sum(pca_result$sdev^2) * 100
-
-print(porcentaje_var_explicada)
-
-# Here we have the percentage of variability explained by each principal component.
-
-# Create a dataframe with the name of the columns and the percentage of variability explained
-
-resultados_dataframe <- data.frame(Columna = colnames(final_df_selected_PCA), 
-                                   Porcentaje_Variabilidad_Explicada = porcentaje_var_explicada)
-#---
-
-# Based on these results, we could eliminate the variables with the least explained variability from our dataframe.
-
-```
-
 #             CORRECTION OF THE 0, 1 FACTOR VARIABLES
 
 ```{r}
