@@ -760,7 +760,7 @@ c <- as.numeric(nrow(dataframe_for_modeling))
 # Remove NA from the variable icu_mortality_72hrs
 
 dataframe_for_modeling <- dataframe_for_modeling %>%
-  mutate(icu_mortality_72hrs = coalesce(icu_mortality_72hrs, 1))
+  filter(!is.na(icu_mortality_72hrs))
 
 # Remove NA from the variable age
 
@@ -983,7 +983,7 @@ View(NA_by_column)
 
 # Save the dataframe in excel.
 
- write.csv(dataframe_for_modeling, "dataframe_2024_04_23.csv")
+ write.csv(dataframe_for_modeling, "dataframe_2024_05_14.csv")
 
 ```
 
