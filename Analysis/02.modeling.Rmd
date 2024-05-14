@@ -541,7 +541,7 @@ str_glue("The best model is {best_performing_model_name}")
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.5){                    # Change the fit to the best_model.
+getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.4){                    # Change the fit to the best_model.
                                                                                            
   prediction_probabilities_tmp = predict(fit_lr, newdata=data_test, type = "prob")        
 
@@ -558,7 +558,7 @@ getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.5){          
                                                                    rownames(prediction_probabilities_tmp)),])
   
   final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
@@ -842,7 +842,7 @@ fit_lr <- readRDS("lr_model.Rda")
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.5){                    # Change the fit to the best_model. 
+getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.4){                    # Change the fit to the best_model. 
                                                                                            
   prediction_probabilities_tmp = predict(fit_lr, newdata=data_test, type = "prob")        
 
@@ -859,7 +859,7 @@ getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.5){          
                                                                    rownames(prediction_probabilities_tmp)),])
   
   final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
