@@ -593,13 +593,13 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 
 columna_a_codificar <- "apacheadmissiondx"
 
-# Crear el objeto de diseño para one-hot encoding solo en la columna especificada
+# Create the layout object for one-hot encoding only on the specified column
 dummy_design <- dummyVars(~ ., data = dataframe_for_modeling[, columna_a_codificar, drop = FALSE])
 
-# Aplicar el one-hot encoding a la columna especificada
+# Apply one-hot encoding to the specified column
 one_hot_encoded_data <- predict(dummy_design, newdata = dataframe_for_modeling[, columna_a_codificar, drop = FALSE])
 
-# Unir el resultado con el dataframe original
+# Join the result with the original dataframe
 dataframe_for_modeling <- cbind(dataframe_for_modeling, one_hot_encoded_data)
 
 # Now, if we use "colnames(dataframe_for_modeling)" we can see that columns have been created at the end for each value in the apacheadmissiondx column. Also, if we open the fataframe "one_hot_encoded_data" we can see each column and how values 0 and 1 are assigned.
