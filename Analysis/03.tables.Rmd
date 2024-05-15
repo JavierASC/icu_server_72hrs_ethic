@@ -27,7 +27,7 @@ library(smd)
 
 # file.choose()     # Shows the location of the file.
 
-df_for_table1 <- read_csv("C:\\Users\\jquintero24E\\Desktop\\Icu_mortality-models\\Icu_mortality-models\\Analysis\\dataframe_2024_04_23.csv")
+df_for_table1 <- read_csv("C:\\Users\\jquintero24E\\Desktop\\Icu_mortality-models\\Icu_mortality-models\\Analysis\\dataframe_2024_05_14.csv")
 
 # Delete first column (count)
 
