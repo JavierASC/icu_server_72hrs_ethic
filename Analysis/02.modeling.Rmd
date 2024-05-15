@@ -994,7 +994,7 @@ calculate_precision_recall <- function(predictions, true_labels) {
 
 # Calculate precision and recall for different thresholds
 
-precision_recall_df <- calculate_precision_recall(final_predictions_lr$pred, final_predictions_lr$obs)
+precision_recall_df <- calculate_precision_recall(final_predictions$pred, final_predictions$obs)
 
 
 # Precision versus recall graph
@@ -1024,11 +1024,11 @@ str_glue("The percentage of correct answers is {round(success, digits = 3)} %")
 
 # 2º. PARAMETER F1.
 
-lr_F1 <-F1_Score(final_predictions_lr$obs, final_predictions_lr$pred)
+cforest_F1 <-F1_Score(final_predictions$obs, final_predictions$pred)
 
 # PRINT
 
-str_glue("lr model F1 is {round(lr_F1, digits = 3)}")
+str_glue("cforest model F1 is {round(cforest_F1, digits = 3)}")
 
 ```
 
@@ -1041,7 +1041,7 @@ A graphic representation is made of the importance of each variable in the model
 
 # Calculate the relative importance of the model variables.
 
-importance <- varImp(fit_lr)
+importance <- varImp(fit_cforest)
 
 
 # ggplot
