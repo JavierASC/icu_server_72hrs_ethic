@@ -943,7 +943,7 @@ confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everythin
 # For imbalance classification tasks, it is recommended trying to move the probability threshold (by default 0.5) to achieve a better model performance
 
 # Applying a probability threshold of 0.4 (i.e., if the probability of living is 0.4 or more, the status of this patient is classified as "Alive")
-final_predictions_0.5 = getFinalPredictions(fit_lr, data_test, prob_threshold = 0.5)
+final_predictions_0.5 = getFinalPredictions(fit_cforest, data_test, prob_threshold = 0.5)
 
 # transforming outcomes as factors
 
