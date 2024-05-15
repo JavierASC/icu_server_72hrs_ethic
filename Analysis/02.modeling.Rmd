@@ -79,6 +79,8 @@ library(Tmisc)
 library(visdat)
 library(WVPlots)
 library(xgboost)
+library(modelr)
+library(tidybayes)
 
 ```
 
@@ -93,7 +95,7 @@ In this section, the data, or dataframe, already analyzed and cleaned in the pre
 
 # file.choose()     # Shows the location of the file.
 
-final_df_selected <- read_csv("C:\\Users\\jquintero24E\\Desktop\\Icu_mortality-models\\Icu_mortality-models\\Analysis\\dataframe_2024_04_23.csv")
+final_df_selected <- read_csv("C:\\Users\\jquintero24E\\Desktop\\Icu_mortality-models\\Icu_mortality-models\\Analysis\\dataframe_2024_05_14.csv")
 
 # Delete first column (count)
 
@@ -364,9 +366,9 @@ set.seed(123)
 
 # Train the different models.
 
-h_start_gbm <- Sys.time()                          # 9h
+h_start_gbm <- Sys.time()                          
 
-fit_gbm <- train(outcome_and_exposure,                 # F1:0.3094  Success:26.203%   
+fit_gbm <- train(outcome_and_exposure,                 # 15 min   F1: 0.90030 
                  data = data_train_without_ID,
                  method = "gbm",               
                  trControl = fitControl,        
@@ -374,9 +376,9 @@ fit_gbm <- train(outcome_and_exposure,                 # F1:0.3094  Success:26.2
                  na.action = na.omit,
                  metric = "F1")                 
 
-h_start_rf <- Sys.time()                           # 4h 20 min
+h_start_rf <- Sys.time()                           
 
-fit_rf <- train(outcome_and_exposure,                  # F1:0.2056  Success:21.587%      
+fit_rf <- train(outcome_and_exposure,                  # 1 min   F1: 0.92642
                 data = data_train_without_ID,
                 method = "rf",
                 trControl = fitControl,
@@ -384,9 +386,19 @@ fit_rf <- train(outcome_and_exposure,                  # F1:0.2056  Success:21.5
                 na.action = na.omit,
                 metric = "F1")
 
-h_start_xgb <- Sys.time()                          # 16 min
+h_start_ada <- Sys.time()                           
 
-fit_xgb <- train(outcome_and_exposure,                # F1:0.3020   Success:25.812%    
+fit_ada <- train(outcome_and_exposure,                 # 20 min   F1: 0.91687
+                data = data_train_without_ID,
+                method = "ada",
+                trControl = fitControl,
+                verbose = F,
+                na.action = na.omit,
+                metric = "F1")
+
+h_start_xgb <- Sys.time()                          
+
+fit_xgb <- train(outcome_and_exposure,                 # 2 min    F1: 0.93523 
                  data = data_train_without_ID,
                  method = "xgbTree",
                  trControl = fitControl,
@@ -394,9 +406,9 @@ fit_xgb <- train(outcome_and_exposure,                # F1:0.3020   Success:25.8
                  na.action = na.omit,
                  metric = "F1")
 
-h_start_lr <- Sys.time()                           # 5 min 
+h_start_lr <- Sys.time()                          
 
-fit_lr <- train(outcome_and_exposure,                  #F1:0,7536  Success:61,32%
+fit_lr <- train(outcome_and_exposure,                 # 30 seconds   F1: 0.9498 
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "LogitBoost",
                 trControl = fitControl,
@@ -404,9 +416,9 @@ fit_lr <- train(outcome_and_exposure,                  #F1:0,7536  Success:61,32
                 na.action = na.omit,
                 metric = "F1")
 
-h_start_lda <- Sys.time()                        # 20 seconds             
+h_start_lda <- Sys.time()                                         
 
-fit_lda <- train(outcome_and_exposure,               # F1:0.4641  Success:36.616%    
+fit_lda <- train(outcome_and_exposure,                # 5 seconds   F1: 0.94972 
                 data = data_train_without_ID,          
                 method = "lda",
                 trControl = fitControl,
@@ -414,9 +426,9 @@ fit_lda <- train(outcome_and_exposure,               # F1:0.4641  Success:36.616
                 na.action = na.omit,
                 metric = "F1")
 
-h_start_kernelpls <- Sys.time()                  # 35 seconds 
+h_start_kernelpls <- Sys.time()                  
 
-fit_kernelpls <- train(outcome_and_exposure,         # F1:0.4662  Success:36.721%       
+fit_kernelpls <- train(outcome_and_exposure,          # 7 seconds  F1: 0.9778 
                 data = data_train_without_ID,
                 method = "kernelpls",
                 trControl = fitControl,
@@ -426,7 +438,7 @@ fit_kernelpls <- train(outcome_and_exposure,         # F1:0.4662  Success:36.721
 
 h_start_ranger <- Sys.time() 
 
-fit_ranger <- train(outcome_and_exposure,           # 40 min
+fit_ranger <- train(outcome_and_exposure,             # 1 min   F1: 0.93905 
                 data = data_train_without_ID,
                 method = "ranger",
                 trControl = fitControl,
@@ -436,8 +448,8 @@ fit_ranger <- train(outcome_and_exposure,           # 40 min
 
 h_start_Linda <- Sys.time() 
 
-fit_Linda <- train(outcome_and_exposure,            # 1 min
-                data = data_train_without_ID,       # F1:0.4932  Success:40.536%  
+fit_Linda <- train(outcome_and_exposure,              # 8 seconds  F1: 0.93416 
+                data = data_train_without_ID,      
                 method = "Linda",
                 trControl = fitControl,
                 verbose = F,
@@ -448,8 +460,8 @@ fit_Linda <- train(outcome_and_exposure,            # 1 min
 
 h_start_cforest <- Sys.time() 
 
-fit_cforest <- train(outcome_and_exposure,       # 1h
-                data = data_train_without_ID,    # F1:0,68  Success:53,30%
+fit_cforest <- train(outcome_and_exposure,             # 10min   F1: 0.99218
+                data = data_train_without_ID,    
                 method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
@@ -474,6 +486,7 @@ h_modeling <- as.numeric(difftime(h_end, h_start_gbm, units = "hours"))
 
 saveRDS(fit_gbm, file = "gbm_model.Rda")
 saveRDS(fit_rf, file = "rf_model.Rda")
+saveRDS(fit_ada, file = "ada_model.Rda")
 saveRDS(fit_xgb, file = "xgb_model.Rda")
 saveRDS(fit_lr, file = "lr_model.Rda") # Runs later again
 saveRDS(fit_lda, file = "lda_model.Rda")
@@ -486,6 +499,7 @@ saveRDS(fit_cforest, file = "cforest_model.Rda")
 
 # fit_gbm <- readRDS("gbm_model.Rda")
 # fit_rf <- readRDS("rf_model.Rda")
+# fit_ada <- readRDS("ada_model.Rda")
 # fit_xgb <- readRDS("xgb_model.Rda")
 # fit_lr <- readRDS("lr_model.Rda")
 # fit_lda <- readRDS("lda_model.Rda")
@@ -501,6 +515,7 @@ saveRDS(fit_cforest, file = "cforest_model.Rda")
 
 resamps <- resamples(list(fit_gbm = fit_gbm,
                           fit_rf  = fit_rf,
+                          fit_ada  = fit_ada,
                           fit_xgb = fit_xgb,
                           fit_lr  = fit_lr,
                           fit_lda = fit_lda,
@@ -541,9 +556,9 @@ str_glue("The best model is {best_performing_model_name}")
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.4){                    # Change the fit to the best_model.
+getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){                    # Change the fit to the best_model.
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr, newdata=data_test, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest, newdata=data_test, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
 
@@ -572,6 +587,7 @@ getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.4){          
 final_predictions = getFinalPredictions(best_performing_model, data_test)
 final_predictions_gbm = getFinalPredictions(fit_gbm, data_test)
 final_predictions_rf = getFinalPredictions(fit_rf, data_test)
+final_predictions_ada = getFinalPredictions(fit_ada, data_test)
 final_predictions_xgb = getFinalPredictions(fit_xgb, data_test)
 final_predictions_lr = getFinalPredictions(fit_lr, data_test)
 final_predictions_lda = getFinalPredictions(fit_lda, data_test)
@@ -618,6 +634,22 @@ final_predictions_rf$pred <- as.factor(final_predictions_rf$pred)
 # confusion matrix
 
 matrix_rf <- confusionMatrix(final_predictions_rf$pred, final_predictions_rf$obs, mode = "everything")
+
+#---
+
+# ada CONFUSION MATRIX
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_ada$obs <- as.factor(final_predictions_ada$obs)
+
+# mortality_prediction_B
+final_predictions_ada$pred <- as.factor(final_predictions_ada$pred)
+
+# confusion matrix
+
+matrix_ada <- confusionMatrix(final_predictions_ada$pred, final_predictions_ada$obs, mode = "everything")
 
 #---
 
@@ -742,6 +774,7 @@ matrix_cforest <- confusionMatrix(final_predictions_cforest$pred, final_predicti
 
 gbm_Precision <- matrix_gbm$table[1, 1] / sum(matrix_gbm$table[1, ])
 rf_Precision <- matrix_rf$table[1, 1] / sum(matrix_rf$table[1, ])
+ada_Precision <- matrix_ada$table[1, 1] / sum(matrix_ada$table[1, ])
 xgb_Precision <- matrix_xgb$table[1, 1] / sum(matrix_xgb$table[1, ])
 lr_Precision <- matrix_lr$table[1, 1] / sum(matrix_lr$table[1, ])
 lda_Precision <- matrix_lda$table[1, 1] / sum(matrix_lda$table[1, ])
@@ -755,6 +788,7 @@ cforest_Precision <- matrix_cforest$table[1, 1] / sum(matrix_cforest$table[1, ])
 
 gbm_recall <- matrix_gbm$table[1, 1] / sum(matrix_gbm$table[, 1])
 rf_recall <- matrix_rf$table[1, 1] / sum(matrix_rf$table[, 1])
+ada_recall <- matrix_ada$table[1, 1] / sum(matrix_ada$table[, 1])
 xgb_recall <- matrix_xgb$table[1, 1] / sum(matrix_xgb$table[, 1])
 lr_recall <- matrix_lr$table[1, 1] / sum(matrix_lr$table[, 1])
 lda_recall <- matrix_lda$table[1, 1] / sum(matrix_lda$table[, 1])
@@ -766,8 +800,9 @@ cforest_recall <- matrix_cforest$table[1, 1] / sum(matrix_cforest$table[, 1])
 
 # PARAMETER F1.
 
-gbm_F1 <-F1_Score(final_predictions_gbm$obs, final_predictions_gbm$recall)
+gbm_F1 <-F1_Score(final_predictions_gbm$obs, final_predictions_gbm$pred)
 rf_F1 <-F1_Score(final_predictions_rf$obs, final_predictions_rf$pred)
+ada_F1 <-F1_Score(final_predictions_ada$obs, final_predictions_ada$pred)
 xgb_F1 <-F1_Score(final_predictions_xgb$obs, final_predictions_xgb$pred)
 lr_F1 <-F1_Score(final_predictions_lr$obs, final_predictions_lr$pred)
 lda_F1 <-F1_Score(final_predictions_lda$obs, final_predictions_lda$pred)
@@ -781,16 +816,16 @@ cforest_F1 <-F1_Score(final_predictions_cforest$obs, final_predictions_cforest$p
 # CREATE THE TABLE
 
 # Models
-Models <- c("lr", "cforest", "lda", "kernelpls", "Linda", "gbm", "xgb", "ranger", "rf")
+Models <- c("lr", "cforest", "lda", "kernelpls", "Linda", "gbm", "xgb", "ranger", "rf", "ada")
 
 # Precision
-Precision <- round(c(lr_Precision, cforest_Precision, lda_Precision, kernelpls_Precision, Linda_Precision, gbm_Precision, xgb_Precision, ranger_Precision, rf_Precision),3)
+Precision <- round(c(lr_Precision, cforest_Precision, lda_Precision, kernelpls_Precision, Linda_Precision, gbm_Precision, xgb_Precision, ranger_Precision, rf_Precision, ada_Precision),3)
 
 # Recall
-Recall <- round(c(lr_recall, cforest_recall, lda_recall, kernelpls_recall, Linda_recall, gbm_recall, xgb_recall, ranger_recall, rf_recall),3)
+Recall <- round(c(lr_recall, cforest_recall, lda_recall, kernelpls_recall, Linda_recall, gbm_recall, xgb_recall, ranger_recall, rf_recall, ada_recall),3)
 
 # F1 score
-F1 <- round(c(lr_F1, cforest_F1, lda_F1, kernelpls_F1, Linda_F1, gbm_F1, xgb_F1, ranger_F1, rf_F1),3)
+F1 <- round(c(lr_F1, cforest_F1, lda_F1, kernelpls_F1, Linda_F1, gbm_F1, xgb_F1, ranger_F1, rf_F1, ada_F1),3)
 
 
 # Dataframe
@@ -798,13 +833,17 @@ comparative_table <- data.frame(Models = Models, Precision = Precision, Recall =
 
 print(comparative_table)
 
+comparative_table_ordered <- comparative_table[order(comparative_table$F1, decreasing = TRUE),]
+
+print(tabla_comparativa_ordenada)
+
 ```
 
 
 
 # TRAINING ONLY THE SELECTED MODEL
 
-The selected model is lr (LogitBoost).
+The selected model is cforest (Rborist).
 
 ```{r}
 
@@ -812,17 +851,18 @@ The selected model is lr (LogitBoost).
 
 set.seed(123)
 
-hora_inicio_seleccionado <- Sys.time() 
 
-fit_lr <- train(outcome_and_exposure,          #F1:0,7536  Success:61,32%
-                data = data_train_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+h_start_selected <- Sys.time() 
+
+fit_cforest <- train(outcome_and_exposure,             # 10min   F1: 0.99218
+                data = data_train_without_ID,    
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-hora_fin_seleccionado <- Sys.time() 
+h_end_selected <- Sys.time() 
 
 #---
 
@@ -830,21 +870,21 @@ hora_fin_seleccionado <- Sys.time()
 
 # You can save the model so you don't have to run it again.
 
-saveRDS(fit_lr, file = "lr_model.Rda")
+saveRDS(fit_cforest, file = "cforest_model.Rda")
 
 # UPLOAD THE MODEL
 
 # If you have run model training previously you can load the saved model to save time.
 
-fit_lr <- readRDS("lr_model.Rda")
+fit_cforest <- readRDS("cforest_model.Rda")
 
 #---
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.4){                    # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){                    # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr, newdata=data_test, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest, newdata=data_test, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
 
@@ -866,8 +906,8 @@ getFinalPredictions = function(fit_lr, data_test, prob_threshold=0.4){          
 
 # End of function
 
-final_predictions_lr = getFinalPredictions(fit_lr, data_test)
-final_predictions <- final_predictions_lr
+final_predictions_cforest = getFinalPredictions(fit_cforest, data_test)
+final_predictions <- final_predictions_cforest
 
 ```
 
@@ -895,6 +935,38 @@ levels(final_predictions$pred)
 confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everything")
 
 ```
+
+# COMPARING MODEL PERFORMANCE APPLYING THRESHOLD-MOVING FOR IMBALANCE CLASSIFICATION
+
+```{r}
+# For imbalance classification tasks, it is recommended trying to move the probability threshold (by default 0.5) to achieve a better model performance
+
+# Applying a probability threshold of 0.4 (i.e., if the probability of living is 0.4 or more, the status of this patient is classified as "Alive")
+final_predictions_0.5 = getFinalPredictions(fit_lr, data_test, prob_threshold = 0.5)
+
+# transforming outcomes as factors
+
+final_predictions_0.5$obs <- as.factor(final_predictions_0.5$obs)
+
+levels(final_predictions_0.5$obs)
+
+final_predictions$obs <- as.factor(final_predictions$obs)
+
+# mortality_prediction_B
+final_predictions_0.5$pred <- factor(final_predictions_0.5$pred)
+
+levels(final_predictions_0.5$pred)
+
+final_predictions$pred <- factor(final_predictions$pred)
+
+# Comparing both Confusion Matrices
+## matrix applying threshold of 0.40
+confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everything")
+
+## matrix applying by default threshold of 0.50
+confusionMatrix(final_predictions_0.5$pred, final_predictions_0.5$obs, mode = "everything")
+```
+
 
 # PRECISION-RECALL CURVE
 
@@ -986,265 +1058,306 @@ ggplot(importance, aes(x = Overall, y = reorder(rownames(importance), Overall)))
 
 # SUBGROUPS PREDICTIONS (FAIRNESS)
 
-## Option A: We use de trained model to predict by subgroups. So, F1 is the same for each subgroup. 
+## Option A: We use de trained model to predict by subgroups.
 
 ```{r}
-
-# Sex. Subgroup analysis: male and female
-
-# SUBGROUP 1: Sex - male
-
-# We add the predictions of the model and then filter by...
-
-pred_male <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(sex == 0)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_male <- mean(pred_male$obs == pred_male$pred)*100
-
-str_glue("The percentage of correct answers only for males is {round(success_male, digits = 3)} %")
-
-#---
-
-# SUBGROUP 2: Sex - female
-
-pred_female <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(sex == 1)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_female <- mean(pred_female$obs == pred_female$pred)*100
-
-str_glue("The percentage of correct answers only for females is {round(success_female, digits = 3)} %")
-
-
-#-------------------------------------------------------------------------------
-
-# Age. Subgroups analysis: childhood (0-9 years), adolescence (10-19 years), youth (20-24), adulthood (25-64), old age (+65 years)
-
-# SUBGROUP 3: age - 0-9 years   # NO DATA (min age = 17 years old)
-
-pred_childhood <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(age < 10)
-
-#---
-
-# SUBGROUP 4: age - 10-19 years
-
-pred_adolescence <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(age > 9) %>%
-  filter(age < 20)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_adolescense <- mean(pred_adolescence$obs == pred_adolescence$pred)*100
-
-str_glue("The percentage of correct answers only for adolescense is {round(success_adolescense, digits = 3)} %")
-
-#---
-
-# SUBGROUP 5: age - 20-24 years
-
-pred_youth <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(age > 19) %>%
-  filter(age < 25)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_youth <- mean(pred_youth$obs == pred_youth$pred)*100
-
-str_glue("The percentage of correct answers only for youth is {round(success_youth, digits = 3)} %")
-
-#---
-
-# SUBGROUP 6: age - 25-64 years
-
-pred_adulthood <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(age > 24) %>%
-  filter(age < 65)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_adulthood <- mean(pred_adulthood$obs == pred_adulthood$pred)*100
-
-str_glue("The percentage of correct answers only for adulthood is {round(success_adulthood, digits = 3)} %")
-
-#---
-
-# SUBGROUP 6: age - >65 years
-
-pred_old_age <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(age > 64)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_old_age <- mean(pred_old_age$obs == pred_old_age$pred)*100
-
-str_glue("The percentage of correct answers only for old age is {round(success_old_age, digits = 3)} %")
-
-#-------------------------------------------------------------------------------
-
-# Socioeconomic status (teaching status)
-
-# We use the teaching status as a socioeconomic status index. # FALSE: 0   TRUE: 1. We consider that hospitals with teaching status have higher socioeconomic status.
-
-# SUBGROUP 7: teachingstatus - 1 (TRUE)
-
-pred_teach_true <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(teachingstatus == 1)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_teach_true <- mean(pred_teach_true$obs == pred_teach_true$pred)*100
-
-str_glue("The percentage of correct answers only for hospitals with teaching status true is {round(success_teach_true, digits = 3)} %")
-
-#---
-
-# SUBGROUP 8: teachingstatus - 0 (FALSE)
-
-pred_teach_false <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(teachingstatus == 0)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_teach_false <- mean(pred_teach_false$obs == pred_teach_false$pred)*100
-
-str_glue("The percentage of correct answers only for hospitals with teaching status false is {round(success_teach_false, digits = 3)} %")
-
-#---
-
-# SUBGROUP 9: ethnicity - 0 (African American)
-
-pred_african_american <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(ethnicity == 0)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_african_american <- mean(pred_african_american$obs == pred_african_american$pred)*100
-
-str_glue("The percentage of correct answers only for African American patients is {round(success_african_american, digits = 3)} %")
-
-#---
-
-# SUBGROUP 10: ethnicity - 1 (Asian)
-
-pred_asian <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(ethnicity == 1)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_asian <- mean(pred_asian$obs == pred_asian$pred)*100
-
-str_glue("The percentage of correct answers only for asian patients is {round(success_asian, digits = 3)} %")
-
-#---
-
-# SUBGROUP 11: ethnicity - 2 (Caucasian)
-
-pred_caucasian <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(ethnicity == 2)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_caucasian <- mean(pred_caucasian$obs == pred_caucasian$pred)*100
-
-str_glue("The percentage of correct answers only for caucasian patients is {round(success_caucasian, digits = 3)} %")
-
-#---
-
-# SUBGROUP 12: ethnicity - 3 (Hispanic)
-
-pred_hispanic <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(ethnicity == 3)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_hispanic <- mean(pred_hispanic$obs == pred_hispanic$pred)*100
-
-str_glue("The percentage of correct answers only for hispanic patients is {round(success_hispanic, digits = 3)} %")
-
-#---
-
-# SUBGROUP 13: ethnicity - 4 (Native American)
-
-pred_native_american <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(ethnicity == 4)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_native_american <- mean(pred_native_american$obs == pred_native_american$pred)*100
-
-str_glue("The percentage of correct answers only for native american patients is {round(success_native_american, digits = 3)} %")
-
-#---
-
-# SUBGROUP 14: ethnicity - 5 (Other/Unknown)
-
-pred_ethnicity_other <- data_test %>%
-  cbind(final_predictions) %>%
-  filter(ethnicity == 5)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_ethnicity_other <- mean(pred_ethnicity_other$obs == pred_ethnicity_other$pred)*100
-
-str_glue("The percentage of correct answers only for other ethnicity patients is {round(success_ethnicity_other, digits = 3)} %")
-
-```
-## Comparative table Option A
-
-```{r}
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_male <- mean(pred_male$obs == pred_male$pred)*100
-success_female <- mean(pred_female$obs == pred_female$pred)*100
-success_adolescense <- mean(pred_adolescence$obs == pred_adolescence$pred)*100
-success_youth <- mean(pred_youth$obs == pred_youth$pred)*100
-success_adulthood <- mean(pred_adulthood$obs == pred_adulthood$pred)*100
-success_old_age <- mean(pred_old_age$obs == pred_old_age$pred)*100
-success_teach_true <- mean(pred_teach_true$obs == pred_teach_true$pred)*100
-success_teach_false <- mean(pred_teach_false$obs == pred_teach_false$pred)*100
-success_african_american <- mean(pred_african_american$obs == pred_african_american$pred)*100
-success_asian <- mean(pred_asian$obs == pred_asian$pred)*100
-success_caucasian <- mean(pred_caucasian$obs == pred_caucasian$pred)*100
-success_hispanic <- mean(pred_hispanic$obs == pred_hispanic$pred)*100
-success_native_american <- mean(pred_native_american$obs == pred_native_american$pred)*100
-success_ethnicity_other <- mean(pred_ethnicity_other$obs == pred_ethnicity_other$pred)*100
-
-#-------------------------------------------------------------------------------
-
-# In this case, F1 is the same for all subgroups.
-
-# CREATE THE TABLE
-
-# Models
-Groups <- c("Male", "Female", "Adolescence", "Youth", "Adulthood", "Old Age", "Teach True", "Teach False", "African American", "Asian", "Caucasian", "Hispanic", "Native American", "Ethnicity Other")
-
-# Success
-success <- round(c(success_male, success_female, success_adolescense, success_youth, success_adulthood, success_old_age, success_teach_true, success_teach_false, success_african_american, success_asian, success_caucasian, success_hispanic, success_native_american, success_ethnicity_other),3)
-
-# Dataframe
-comparative_option_A <- data.frame(Groups = Groups, Success = paste0(success, "%"))
-
-print(comparative_option_A)
-
+# by categories
+data_plot <- data.frame(class = rep(c("Global score",
+                     "Men",
+                     "Women",
+                     "Adolescents",
+                     "Youth",
+                     "Adults",
+                     "Older adults",
+                     "African American", 
+                     "Asian",
+                     "Caucasian",
+                     "Hispanic",
+                     "Native American",
+                     "Other/Unknown",
+                     "Not teaching status",
+                     "Teaching status"), 3),
+           category = rep(c(rep("Gender", 3),
+                        rep("Age", 4), 
+                        rep("Ethnicity", 6),
+                        rep("Teaching status", 2)), 3),
+           value = c(f1_global, f1_male, f1_female,
+                     f1_adol, f1_youth, f1_adult,
+                     f1_older,
+                     f1_afam, f1_asian,
+                     f1_cau, f1_hisp,
+                     f1_natam, f1_other,
+                     f1_teach, f1_nonteach,
+                     prec_global, prec_male, prec_female,
+                     prec_adol, prec_youth, prec_adult,
+                     prec_older,
+                     prec_afam, prec_asian,
+                     prec_cau, prec_hisp,
+                     prec_natam, prec_other,
+                     prec_teach, prec_nonteach,
+                     recall_global, recall_male, recall_female,
+                     recall_adol, recall_youth, recall_adult,
+                     recall_older,
+                     recall_afam, recall_asian,
+                     recall_cau, recall_hisp,
+                     recall_natam, recall_other,
+                     recall_teach, recall_nonteach),
+           measure = c(rep("F1-score", 15),
+                       rep("Precision", 15),
+                       rep("Recall", 15)))
+
+
+# by subsets
+data_plot <- data.frame(class = rep(c("Global score",
+                     "Men",
+                     "Women",
+                     "Adolescents",
+                     "Youth",
+                     "Adults",
+                     "Older adults",
+                     "African American", 
+                     "Asian",
+                     "Caucasian",
+                     "Hispanic",
+                     "Native American",
+                     "Other/Unknown",
+                     "Not teaching status",
+                     "Teaching status"), 3),
+           category = rep(c(rep("Gender", 3),
+                        rep("Age", 4), 
+                        rep("Ethnicity", 6),
+                        rep("Teaching status", 2)), 3),
+           value = c(f1_global, 0.308, 0.711,
+                     0.507, 0.724, 0.507,
+                     0.392,
+                     0.693, 0.536,
+                     0.694, 0.406,
+                     0.423, 0.653,
+                     0.529, 0.732,
+                     prec_global, 0.552, 0.699,
+                     0.667, 0.694, 0.620,
+                     0.582,
+                     0.733, 0.526,
+                     0.677, 0.626,
+                     0.425, 0.653,
+                     0.654, 0.685,
+                     recall_global, 0.29, 0.724,
+                     0.557, 0.756, 0.43,
+                     0.295,
+                     0.658, 0.547,
+                     0.712, 0.300,
+                     0.421, 0.653,
+                     0.444, 0.786),
+           measure = c(rep("F1-score", 15),
+                       rep("Precision", 15),
+                       rep("Recall", 15)))
+
+
+plot.gender <- data_plot %>%
+  filter(category == "Gender") %>%
+  mutate(class = reorder(class, value)) %>%
+  ggplot(aes(x = value, y = relevel(class, "Global score", after = Inf))) +
+  geom_segment(aes(yend = class, xend = 0.5)) +
+  geom_point(size = 8, color = "firebrick") +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", size = 2.9) +
+  labs(title = "Gender",
+       x = "",
+       y = "") +
+  theme_bw() +
+  scale_x_continuous(limits = c(0.5, 1), 
+                     breaks = seq(0.5, 1, 0.1))
+
+plot.age <- data_plot %>%
+  filter(category == "Age") %>%
+  mutate(class = reorder(class, value)) %>%
+  ggplot(aes(x = value, y = relevel(class, "Global score", after = Inf))) +
+  geom_segment(aes(yend = class, xend = 0.5)) +
+  geom_point(size = 8, color = "firebrick") +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", size = 2.9) +
+  labs(title = "Age",
+       x = "",
+       y = "") +
+  theme_bw() +
+  scale_x_continuous(limits = c(0.5, 1), 
+                     breaks = seq(0.5, 1, 0.1))
+
+plot.race <- data_plot %>%
+  filter(category == "Ethnicity") %>%
+  mutate(class = reorder(class, value)) %>%
+  ggplot(aes(x = value, y = relevel(class, "Global score", after = Inf))) +
+  geom_segment(aes(yend = class, xend = 0.5)) +
+  geom_point(size = 8, color = "firebrick") +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", size = 2.9) +
+  labs(title = "Ethnicity",
+       x = "",
+       y = "") +
+  theme_bw() +
+  scale_x_continuous(limits = c(0.5, 1), 
+                     breaks = seq(0.5, 1, 0.1))
+
+library(ggpubr)
+mix <- ggarrange(plot_gender, plot_age, plot_race, plot_teach) 
+
+tiff("mix.tiff", width = 7, height = 7, res = 300, units = "in")
+annotate_figure(mix, top = "ML Stratified Fairness Analysis",
+                  bottom = "F1-score",
+                  left = "Subgroup")
+dev.off()
+
+data_plot <- data.frame(class = c("Global score",
+                     "Men",
+                     "Women",
+                     "Global score",
+                     "Adolescents",
+                     "Youth",
+                     "Adults",
+                     "Older adults",
+                     "Global score",
+                     "African American", 
+                     "Asian",
+                     "Caucasian",
+                     "Hispanic",
+                     "Native American",
+                     "Other/Unknown",
+                     "Global score",
+                     "Teaching\nstatus",
+                     "Not teaching\nstatus"),
+           category = c(rep("Gender", 3),
+                        rep("Age", 5), 
+                        rep("Ethnicity", 7),
+                        rep("Teaching status", 3)),
+           value = c(f1_global, f1_male, f1_female,
+                     f1_global,
+                     f1_adol, f1_youth, f1_adult,
+                     f1_older, 
+                     f1_global, f1_afam, f1_asian,
+                     f1_cau, f1_hisp,
+                     f1_natam, f1_other,
+                     f1_global, f1_teach, f1_nonteach),
+           col = c(c(0, 1, 1, 
+                     0, 1, 1, 1, 1,
+                     0, 1, 1, 1, 1, 1, 1,
+                     0, 1, 1)))
+
+plot_race <- data_plot %>%
+  filter(category == "Ethnicity") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Asian",
+                                   "Native American",
+                                   "Other/Unknown",
+                                   "Caucasian",
+                                   "African American",
+                                   "Hispanic",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Ethnicity",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+plot_age <- data_plot %>%
+  filter(category == "Age") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Older adults",
+                                   "Adults",
+                                   "Youth",
+                                   "Adolescents",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Age",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+plot_gender <- data_plot %>%
+  filter(category == "Gender") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Men",
+                                   "Women",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Gender",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+plot_teach <- data_plot %>%
+  filter(category == "Teaching status") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Not teaching\nstatus",
+                                   "Teaching\nstatus",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Teaching status",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+
+# final plot
+mix <- data_plot %>%
+  mutate(class = factor(class, levels = c("Global score",
+                                                "Men",
+                                                "Women",
+                                                "Adolescents",
+                                                "Youth",
+                                                "Adults",
+                                                "Older adults",
+                                                "African American",
+                                                "Asian",
+                                                "Caucasian",
+                                                "Hispanic",
+                                                "Native American",
+                                                "Other/Unknown",
+                                                "Not teaching status",
+                                                "Teaching status"))) %>%
+  ggplot(aes(y = value, x = class, fill = measure)) +
+  geom_col(position = position_dodge2(width = 2), width = 0.75) +
+  labs(x = "Subgroups",
+       y = "",
+       fill = "Performance measure") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        axis.text.x = element_text(angle = 90,
+                                   hjust = 0.95,
+                                   vjust = 0.2)) +
+  scale_fill_nejm() +
+  scale_y_continuous(breaks = seq(0, 1.1, 0.2),
+                     limits = c(0, 1.001))
+
+
+tiff("mix_subsets.tiff", width = 8, height = 6, res = 300, units = "in")
+mix
+dev.off()
 
 ```
 
@@ -3144,5 +3257,212 @@ comparative_option_B <- data.frame(Groups = Groups, Precision = Precision, Recal
 
 print(comparative_option_B)
 
+```
+
+
+
+
+
+
+################ OUTCOMES: PREDICTIONS USING `data_test`
+
+```{r}
+
+## Aimed to predict a 95% confidence interval for predictions, we are going to conduct our model applying bootstrapping sampling (10 times)
+
+# bootstrapping
+set.seed(42)
+
+## number of resamplings
+k <- 10
+
+## creation of a empty matrix for predictions
+predictions <- matrix(nrow = nrow(data_test), ncol = k)
+
+
+## loop for computing predictions for each sampling process
+for (i in 1:k) {
+  sample_indices <- sample(nrow(data_train), replace = TRUE)
+  bootstrap_sample <- data_train[sample_indices, ]
+  fit_cforest_new <- train(outcome_and_exposure,                  
+                data = bootstrap_sample,
+                method = "Rborist",
+                trControl = fitControl,
+                verbose = F,
+                na.action = na.omit,
+                metric = "F1")
+  # Predicting probability of class 1
+  predictions[, i] <- getFinalPredictions(fit_cforest_new, data_test)$Expired
+}
+
+
+### to alleviate the computational work, predictions can be loaded directly using the code below
+saveRDS(predictions, file = "pred_folds.Rda")
+# predictions <- readRDS("pred_folds.Rda")
+
+# median for each row in prediction matrix
+newdata <- apply(predictions, 1, median_qi)
+
+# plot!
+data_plot <- do.call(rbind, newdata)
+
+
+# Predictions for hours spent from hospital admission to ICU wards
+data_test %>%
+  mutate(pred = data_plot$y,
+         pred.lower = data_plot$ymin,
+         pred.upper = data_plot$ymax) %>%
+  group_by(prev_dept_los_hrs) %>%
+  summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
+  filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1)) %>%
+  group_by(prev_rounded) %>%
+  summarise(pred.mean = mean(pred.mean),
+            pred.low = mean(pred.low),
+            pred.up = mean(pred.up)) %>%
+  ungroup() %>%
+  ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
+             data = data_test %>%
+               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
+                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
+               filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1))) +
+  geom_line() +
+  geom_lineribbon(aes(ymin = pred.low,
+                      ymax = pred.up)) +
+  labs(x = "Hours from general admission to ICU admission",
+       y = "Predicted probability of death",
+       col = "Mortality") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0, 100, 5)) + 
+  ggsci::scale_color_lancet() +
+  guides(col = guide_legend(override.aes = list(alpha = 1)))
+
+
+# Predictions for age
+data_test %>%
+  mutate(pred = data_plot$y,
+         pred.lower = data_plot$ymin,
+         pred.upper = data_plot$ymax) %>%
+  group_by(age) %>%
+  summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  ggplot(aes(x = age, y = pred.mean)) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.01,
+             data = data_test %>%
+               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
+                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0))) +
+  geom_line() +
+  geom_lineribbon(aes(ymin = pred.low,
+                      ymax = pred.up)) +
+  labs(x = "Age",
+       y = "Predicted probability of death",
+       col = "Mortality") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(15, 100, 5)) + 
+  scale_color_lancet() +
+  guides(col = guide_legend(override.aes = list(alpha = 1)))
+
+
+# Predictions for hours spent from admission to ICU admission by apache_other
+data_test %>%
+  mutate(pred = data_plot$y,
+         pred.lower = data_plot$ymin,
+         pred.upper = data_plot$ymax) %>%
+  group_by(prev_dept_los_hrs, apache_other) %>%
+  summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
+  filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1)) %>%
+  group_by(prev_rounded, apache_other) %>%
+  summarise(pred.mean = mean(pred.mean),
+            pred.low = mean(pred.low),
+            pred.up = mean(pred.up)) %>%
+  ungroup() %>%
+  mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+         apache_other = factor(apache_other)) %>%
+  ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
+             data = data_test %>%
+               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
+                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
+               filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1)) %>%
+    mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+         apache_other = factor(apache_other))) +
+  geom_line() +
+  geom_lineribbon(aes(ymin = pred.low,
+                      ymax = pred.up)) +
+  facet_wrap(~ apache_other) +
+  labs(x = "Hours from hospital admission to ICU admission",
+       y = "Predicted probability of death",
+       col = "Mortality") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0, 100, 5)) + 
+  ggsci::scale_color_lancet() +
+  guides(col = guide_legend(override.aes = list(alpha = 1)))
+
+
+data_test %>%
+  mutate(pred = data_plot$y,
+         pred.lower = data_plot$ymin,
+         pred.upper = data_plot$ymax) %>%
+  group_by(prev_dept_los_hrs, apache_other, hist_diabetes_bin) %>%
+  summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
+  filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1)) %>%
+  group_by(prev_rounded, apache_other, hist_diabetes_bin) %>%
+  summarise(pred.mean = mean(pred.mean),
+            pred.low = mean(pred.low),
+            pred.up = mean(pred.up)) %>%
+  ungroup() %>%
+  mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+         apache_other = factor(apache_other),
+         hist_diabetes_bin = ifelse(hist_diabetes_bin == "1", "No Diabetes", "Diabetes"),
+         hist_diabetes_bin = factor(hist_diabetes_bin,
+                                    levels = c("Diabetes",
+                                               "No Diabetes"))) %>%
+  ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
+             data = data_test %>%
+               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
+                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
+               filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1)) %>%
+    mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+         apache_other = factor(apache_other),
+         hist_diabetes_bin = ifelse(hist_diabetes_bin == "1", "No Diabetes", "Diabetes"),
+         hist_diabetes_bin = factor(hist_diabetes_bin,
+                                    levels = c("Diabetes",
+                                               "No Diabetes")))) +
+  geom_line() +
+  geom_lineribbon(aes(ymin = pred.low,
+                      ymax = pred.up)) +
+  facet_grid(apache_other ~ hist_diabetes_bin) +
+  labs(x = "Hours from hospital admission to ICU admission",
+       y = "Predicted probability of death",
+       col = "Mortality") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0, 100, 5)) + 
+  ggsci::scale_color_lancet() +
+  guides(col = guide_legend(override.aes = list(alpha = 1)))
 ```
 
