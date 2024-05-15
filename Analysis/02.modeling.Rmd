@@ -81,6 +81,7 @@ library(WVPlots)
 library(xgboost)
 library(modelr)
 library(tidybayes)
+library(ggpubr)
 
 ```
 
@@ -572,7 +573,7 @@ getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){     
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
+  final_predictions_tmp = final_predictions_tmp %>%
     dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
@@ -898,7 +899,7 @@ getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){     
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
+  final_predictions_tmp = final_predictions_tmp %>%
     dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
@@ -1061,149 +1062,313 @@ ggplot(importance, aes(x = Overall, y = reorder(rownames(importance), Overall)))
 ## Option A: We use de trained model to predict by subgroups.
 
 ```{r}
+
+# Creation of the final_predictions data joining our data test
+final_predictions <- final_predictions %>%
+  left_join(data_test %>% rename(ID = patientunitstayid), by = "ID") %>%
+  
+  # create age groups
+  mutate(age_class = case_when(
+    age > 0 & age < 10 ~ "childhood",
+    age >= 10 & age < 20 ~ "adolescence",
+    age >= 20 & age < 25 ~ "youth",
+    age >= 25 & age < 65 ~ "adulthood",
+    age >= 65 ~ "older adults"
+  )) %>%
+  
+  # create ethnicity classes
+  mutate(ethnicity = case_when(
+    ethnicity == 0 ~ "African American",
+    ethnicity == 1 ~ "Asian",
+    ethnicity == 2 ~ "Caucasian",
+    ethnicity == 3 ~ "Hispanic",
+    ethnicity == 4 ~ "Native American",
+    ethnicity == 5 ~ "Other/Unknown",
+    TRUE ~ NA_character_
+  ))
+
+
+# Calculation of performance measures at global level
+## sensitivity
+sens <- sensitivity(final_predictions$pred, final_predictions$obs,
+                    negative = "Alive")
+
+## specificity
+spec <- specificity(final_predictions$pred, final_predictions$obs,
+                    positive = "Expire")
+
+## precision
+prec <- posPredValue(final_predictions$pred, final_predictions$obs,
+                     negative = "Alive")
+
+## recall
+recall <- sensitivity(final_predictions$pred, final_predictions$obs,
+                    negative = "Alive")
+
+## Global F1-measure
+f1_global <- F_meas(final_predictions$pred, final_predictions$obs)
+                    
+
+### CATEGORIES ###
+
+### sex ### 
+# create only males subset
+final_subgroup <- final_predictions %>%
+  filter(sex == "0")
+
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_male <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_male <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_male <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only females subset
+final_subgroup <- final_predictions %>%
+  filter(sex == "1")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_female <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_female <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_female <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+### AGE GROUPS ### 
+# create only ADOLESCENTS subset (there is no children)
+final_subgroup <- final_predictions %>%
+  filter(age_class == "adolescence")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_adol <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_adol <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_adol <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only YOUTH subset
+final_subgroup <- final_predictions %>%
+  filter(age_class == "youth")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_youth <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_youth <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_youth <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only ADULTS subset 
+final_subgroup <- final_predictions %>%
+  filter(age_class == "adulthood")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_adult <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_adult <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_adult <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only OLDER ADULTS subset 
+final_subgroup <- final_predictions %>%
+  filter(age_class == "older adults")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_older <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_older <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_older <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+### ETHNICITY ###
+# create only AFRICAN AMERICAN subset
+final_subgroup <- final_predictions %>%
+  filter(ethnicity == "African American")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_afam <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_afam <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_afam <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only ASIAN subset
+final_subgroup <- final_predictions %>%
+  filter(ethnicity == "Asian")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_asian <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_asian <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_asian <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only CAUCASIAN subset
+final_subgroup <- final_predictions %>%
+  filter(ethnicity == "Caucasian")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_cau <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_cau <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_cau <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only HISPANIC subset
+final_subgroup <- final_predictions %>%
+  filter(ethnicity == "Hispanic")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_hisp <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_hisp <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_hisp <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only NATIVE AMERICAN subset
+final_subgroup <- final_predictions %>%
+  filter(ethnicity == "Native American")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_natam <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_natam <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_natam <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only OTHER/UNKNOWN subset
+final_subgroup <- final_predictions %>%
+  filter(ethnicity == "Other/Unknown")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_other <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_other <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_other <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+### TEACHING STATUS ###
+# create only teaching status subset
+final_subgroup <- final_predictions %>%
+  filter(teachingstatus == "1")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_teach <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_teach <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_teach <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+
+
+# create only no teaching status subset
+final_subgroup <- final_predictions %>%
+  filter(teachingstatus == "0")
+
+# calculation of performance measures at subgroup levels
+## precision
+prec_nonteach <- posPredValue(final_subgroup$pred, final_subgroup$obs,
+                     negative = "Alive")
+
+## recall
+recall_nonteach <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+                    negative = "Alive")
+
+## F1-measure
+f1_nonteach <- F_meas(final_subgroup$pred, final_subgroup$obs)
+
+                    
+                                      
+### CREATE FINAL DATASETS WITH PERFORMANCE VALUES
 # by categories
-data_plot <- data.frame(class = rep(c("Global score",
-                     "Men",
-                     "Women",
-                     "Adolescents",
-                     "Youth",
-                     "Adults",
-                     "Older adults",
-                     "African American", 
-                     "Asian",
-                     "Caucasian",
-                     "Hispanic",
-                     "Native American",
-                     "Other/Unknown",
-                     "Not teaching status",
-                     "Teaching status"), 3),
-           category = rep(c(rep("Gender", 3),
-                        rep("Age", 4), 
-                        rep("Ethnicity", 6),
-                        rep("Teaching status", 2)), 3),
-           value = c(f1_global, f1_male, f1_female,
-                     f1_adol, f1_youth, f1_adult,
-                     f1_older,
-                     f1_afam, f1_asian,
-                     f1_cau, f1_hisp,
-                     f1_natam, f1_other,
-                     f1_teach, f1_nonteach,
-                     prec_global, prec_male, prec_female,
-                     prec_adol, prec_youth, prec_adult,
-                     prec_older,
-                     prec_afam, prec_asian,
-                     prec_cau, prec_hisp,
-                     prec_natam, prec_other,
-                     prec_teach, prec_nonteach,
-                     recall_global, recall_male, recall_female,
-                     recall_adol, recall_youth, recall_adult,
-                     recall_older,
-                     recall_afam, recall_asian,
-                     recall_cau, recall_hisp,
-                     recall_natam, recall_other,
-                     recall_teach, recall_nonteach),
-           measure = c(rep("F1-score", 15),
-                       rep("Precision", 15),
-                       rep("Recall", 15)))
-
-
-# by subsets
-data_plot <- data.frame(class = rep(c("Global score",
-                     "Men",
-                     "Women",
-                     "Adolescents",
-                     "Youth",
-                     "Adults",
-                     "Older adults",
-                     "African American", 
-                     "Asian",
-                     "Caucasian",
-                     "Hispanic",
-                     "Native American",
-                     "Other/Unknown",
-                     "Not teaching status",
-                     "Teaching status"), 3),
-           category = rep(c(rep("Gender", 3),
-                        rep("Age", 4), 
-                        rep("Ethnicity", 6),
-                        rep("Teaching status", 2)), 3),
-           value = c(f1_global, 0.308, 0.711,
-                     0.507, 0.724, 0.507,
-                     0.392,
-                     0.693, 0.536,
-                     0.694, 0.406,
-                     0.423, 0.653,
-                     0.529, 0.732,
-                     prec_global, 0.552, 0.699,
-                     0.667, 0.694, 0.620,
-                     0.582,
-                     0.733, 0.526,
-                     0.677, 0.626,
-                     0.425, 0.653,
-                     0.654, 0.685,
-                     recall_global, 0.29, 0.724,
-                     0.557, 0.756, 0.43,
-                     0.295,
-                     0.658, 0.547,
-                     0.712, 0.300,
-                     0.421, 0.653,
-                     0.444, 0.786),
-           measure = c(rep("F1-score", 15),
-                       rep("Precision", 15),
-                       rep("Recall", 15)))
-
-
-plot.gender <- data_plot %>%
-  filter(category == "Gender") %>%
-  mutate(class = reorder(class, value)) %>%
-  ggplot(aes(x = value, y = relevel(class, "Global score", after = Inf))) +
-  geom_segment(aes(yend = class, xend = 0.5)) +
-  geom_point(size = 8, color = "firebrick") +
-  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", size = 2.9) +
-  labs(title = "Gender",
-       x = "",
-       y = "") +
-  theme_bw() +
-  scale_x_continuous(limits = c(0.5, 1), 
-                     breaks = seq(0.5, 1, 0.1))
-
-plot.age <- data_plot %>%
-  filter(category == "Age") %>%
-  mutate(class = reorder(class, value)) %>%
-  ggplot(aes(x = value, y = relevel(class, "Global score", after = Inf))) +
-  geom_segment(aes(yend = class, xend = 0.5)) +
-  geom_point(size = 8, color = "firebrick") +
-  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", size = 2.9) +
-  labs(title = "Age",
-       x = "",
-       y = "") +
-  theme_bw() +
-  scale_x_continuous(limits = c(0.5, 1), 
-                     breaks = seq(0.5, 1, 0.1))
-
-plot.race <- data_plot %>%
-  filter(category == "Ethnicity") %>%
-  mutate(class = reorder(class, value)) %>%
-  ggplot(aes(x = value, y = relevel(class, "Global score", after = Inf))) +
-  geom_segment(aes(yend = class, xend = 0.5)) +
-  geom_point(size = 8, color = "firebrick") +
-  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", size = 2.9) +
-  labs(title = "Ethnicity",
-       x = "",
-       y = "") +
-  theme_bw() +
-  scale_x_continuous(limits = c(0.5, 1), 
-                     breaks = seq(0.5, 1, 0.1))
-
-library(ggpubr)
-mix <- ggarrange(plot_gender, plot_age, plot_race, plot_teach) 
-
-tiff("mix.tiff", width = 7, height = 7, res = 300, units = "in")
-annotate_figure(mix, top = "ML Stratified Fairness Analysis",
-                  bottom = "F1-score",
-                  left = "Subgroup")
-dev.off()
-
 data_plot <- data.frame(class = c("Global score",
                      "Men",
                      "Women",
@@ -1239,6 +1404,8 @@ data_plot <- data.frame(class = c("Global score",
                      0, 1, 1, 1, 1, 1, 1,
                      0, 1, 1)))
 
+### PLOTS ###
+# plot by race
 plot_race <- data_plot %>%
   filter(category == "Ethnicity") %>%
   mutate(class = reorder(class, value)) %>%
@@ -1262,6 +1429,7 @@ plot_race <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
+# plot by age group
 plot_age <- data_plot %>%
   filter(category == "Age") %>%
   mutate(class = reorder(class, value)) %>%
@@ -1283,6 +1451,7 @@ plot_age <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
+# plot by gender
 plot_gender <- data_plot %>%
   filter(category == "Gender") %>%
   mutate(class = reorder(class, value)) %>%
@@ -1302,6 +1471,7 @@ plot_gender <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
+# plot by teaching status
 plot_teach <- data_plot %>%
   filter(category == "Teaching status") %>%
   mutate(class = reorder(class, value)) %>%
@@ -1321,9 +1491,19 @@ plot_teach <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
+# combine plots
+comb <- ggarrange(plot_gender, plot_age, 
+                  plot_race, plot_teach)
 
-# final plot
-mix <- data_plot %>%
+# annotate figure
+annotate(comb,
+         top = "ML Stratified Fairness Analysis",
+         bottom = "F1-score",
+         left = "Subgroup")
+
+
+### EXTRA PLOT ###
+data_plot %>%
   mutate(class = factor(class, levels = c("Global score",
                                                 "Men",
                                                 "Women",
@@ -1353,11 +1533,6 @@ mix <- data_plot %>%
   scale_fill_nejm() +
   scale_y_continuous(breaks = seq(0, 1.1, 0.2),
                      limits = c(0, 1.001))
-
-
-tiff("mix_subsets.tiff", width = 8, height = 6, res = 300, units = "in")
-mix
-dev.off()
 
 ```
 
@@ -1403,21 +1578,21 @@ outcome_and_exposure_male <- as.formula(paste(outcome_model_male, "~", paste(exp
 
 # 3. TRAINING THE MODEL
 
-fit_lr_male <- train(outcome_and_exposure_male,          #F1:0.3804   Success:31.126%
+fit_cforest_male <- train(outcome_and_exposure_male,       
                 data = data_train_male_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_male, file = "lr_male_model.Rda")
+saveRDS(fit_cforest_male, file = "cforest_male_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_male, data_test_male, prob_threshold=0.5){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_male, data_test_male, prob_threshold=0.4){                 # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_male, newdata=data_test_male, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_male, newdata=data_test_male, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_male$patientunitstayid          
 
@@ -1431,16 +1606,16 @@ getFinalPredictions = function(fit_lr_male, data_test_male, prob_threshold=0.5){
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_male = getFinalPredictions(fit_lr_male, data_test_male)
-final_predictions_male <- final_predictions_lr_male
+final_predictions_cforest_male = getFinalPredictions(fit_cforest_male, data_test_male)
+final_predictions_male <- final_predictions_cforest_male
 
 
 # 5. CONFUSION MATRIX
@@ -1459,21 +1634,6 @@ levels(final_predictions_male$pred)
 # confusion matrix
 
 matrix_1 <- confusionMatrix(final_predictions_male$pred, final_predictions_male$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_male <- mean(final_predictions_male$obs == final_predictions_male$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_male, digits = 3)} %")
-
-
-lr_F1_male <-F1_Score(final_predictions_lr_male$obs, final_predictions_lr_male$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_male, digits = 3)}")
-
 
 
 # PRECISION
@@ -1526,21 +1686,21 @@ outcome_and_exposure_female <- as.formula(paste(outcome_model_female, "~", paste
 
 # 3. TRAINING THE MODEL
 
-fit_lr_female <- train(outcome_and_exposure_female,          #F1:0,5955  Success:45,721%
+fit_cforest_female <- train(outcome_and_exposure_female,      
                 data = data_train_female_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_female, file = "lr_female_model.Rda")
+saveRDS(fit_cforest_female, file = "cforest_female_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_female, data_test_female, prob_threshold=0.5){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_female, data_test_female, prob_threshold=0.4){          # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_female, newdata=data_test_female, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_female, newdata=data_test_female, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_female$patientunitstayid          
 
@@ -1554,16 +1714,16 @@ getFinalPredictions = function(fit_lr_female, data_test_female, prob_threshold=0
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_female = getFinalPredictions(fit_lr_female, data_test_female)
-final_predictions_female <- final_predictions_lr_female
+final_predictions_cforest_female = getFinalPredictions(fit_cforest_female, data_test_female)
+final_predictions_female <- final_predictions_cforest_female
 
 
 # 5. CONFUSION MATRIX
@@ -1582,21 +1742,6 @@ levels(final_predictions_female$pred)
 # confusion matrix
 
 matrix_2 <- confusionMatrix(final_predictions_female$pred, final_predictions_female$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_female <- mean(final_predictions_female$obs == final_predictions_female$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_female, digits = 3)} %")
-
-
-lr_F1_female <-F1_Score(final_predictions_lr_female$obs, final_predictions_lr_female$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_female, digits = 3)}")
-
 
 
 # PRECISION
@@ -1652,21 +1797,21 @@ outcome_and_exposure_adolescence <- as.formula(paste(outcome_model_adolescence, 
 
 # 3. TRAINING THE MODEL
 
-fit_lr_adolescence <- train(outcome_and_exposure_adolescence,          #F1:0,6370  Success:50,6712%
+fit_cforest_adolescence <- train(outcome_and_exposure_adolescence,  
                 data = data_train_adolescence_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_adolescence, file = "lr_adolescence_model.Rda")
+saveRDS(fit_cforest_adolescence, file = "cforest_adolescence_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_adolescence, data_test_adolescence, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_adolescence, data_test_adolescence, prob_threshold=0.4){  # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_adolescence, newdata=data_test_adolescence, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_adolescence, newdata=data_test_adolescence, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_adolescence$patientunitstayid          
 
@@ -1680,16 +1825,16 @@ getFinalPredictions = function(fit_lr_adolescence, data_test_adolescence, prob_t
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_adolescence = getFinalPredictions(fit_lr_adolescence, data_test_adolescence)
-final_predictions_adolescence <- final_predictions_lr_adolescence
+final_predictions_cforest_adolescence = getFinalPredictions(fit_cforest_adolescence, data_test_adolescence)
+final_predictions_adolescence <- final_predictions_cforest_adolescence
 
 
 # 5. CONFUSION MATRIX
@@ -1708,21 +1853,6 @@ levels(final_predictions_adolescence$pred)
 # confusion matrix
 
 matrix_4 <- confusionMatrix(final_predictions_adolescence$pred, final_predictions_adolescence$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_adolescence <- mean(final_predictions_adolescence$obs == final_predictions_adolescence$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_adolescence, digits = 3)} %")
-
-
-lr_F1_adolescence <-F1_Score(final_predictions_lr_adolescence$obs, final_predictions_lr_adolescence$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_adolescence, digits = 3)}")
-
 
 
 # PRECISION
@@ -1778,21 +1908,21 @@ outcome_and_exposure_youth <- as.formula(paste(outcome_model_youth, "~", paste(e
 
 # 3. TRAINING THE MODEL
 
-fit_lr_youth <- train(outcome_and_exposure_youth,          #F1:0,72372  Success:57,836%
+fit_cforest_youth <- train(outcome_and_exposure_youth,          #F1:0,72372  Success:57,836%
                 data = data_train_youth_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_youth, file = "lr_youth_model.Rda")
+saveRDS(fit_cforest_youth, file = "cforest_youth_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_youth, data_test_youth, prob_threshold=0.5){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_youth, data_test_youth, prob_threshold=0.4){                 # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_youth, newdata=data_test_youth, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_youth, newdata=data_test_youth, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_youth$patientunitstayid          
 
@@ -1806,16 +1936,16 @@ getFinalPredictions = function(fit_lr_youth, data_test_youth, prob_threshold=0.5
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_youth = getFinalPredictions(fit_lr_youth, data_test_youth)
-final_predictions_youth <- final_predictions_lr_youth
+final_predictions_cforest_youth = getFinalPredictions(fit_cforest_youth, data_test_youth)
+final_predictions_youth <- final_predictions_cforest_youth
 
 
 # 5. CONFUSION MATRIX
@@ -1834,21 +1964,6 @@ levels(final_predictions_youth$pred)
 # confusion matrix
 
 matrix_5 <- confusionMatrix(final_predictions_youth$pred, final_predictions_youth$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_youth <- mean(final_predictions_youth$obs == final_predictions_youth$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_youth, digits = 3)} %")
-
-
-lr_F1_youth <-F1_Score(final_predictions_lr_youth$obs, final_predictions_lr_youth$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_youth, digits = 3)}")
-
 
 
 # PRECISION
@@ -1904,21 +2019,21 @@ outcome_and_exposure_adulthood <- as.formula(paste(outcome_model_adulthood, "~",
 
 # 3. TRAINING THE MODEL
 
-fit_lr_adulthood <- train(outcome_and_exposure_adulthood,          #F1:0,72372  Success:57,836%
+fit_cforest_adulthood <- train(outcome_and_exposure_adulthood,   
                 data = data_train_adulthood_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_adulthood, file = "lr_adulthood_model.Rda")
+saveRDS(fit_cforest_adulthood, file = "cforest_adulthood_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_adulthood, data_test_adulthood, prob_threshold=0.5){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_adulthood, data_test_adulthood, prob_threshold=0.4){                 # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_adulthood, newdata=data_test_adulthood, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_adulthood, newdata=data_test_adulthood, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_adulthood$patientunitstayid          
 
@@ -1932,16 +2047,16 @@ getFinalPredictions = function(fit_lr_adulthood, data_test_adulthood, prob_thres
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_adulthood = getFinalPredictions(fit_lr_adulthood, data_test_adulthood)
-final_predictions_adulthood <- final_predictions_lr_adulthood
+final_predictions_cforest_adulthood = getFinalPredictions(fit_cforest_adulthood, data_test_adulthood)
+final_predictions_adulthood <- final_predictions_cforest_adulthood
 
 
 # 5. CONFUSION MATRIX
@@ -1960,21 +2075,6 @@ levels(final_predictions_adulthood$pred)
 # confusion matrix
 
 matrix_6 <- confusionMatrix(final_predictions_adulthood$pred, final_predictions_adulthood$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_adulthood <- mean(final_predictions_adulthood$obs == final_predictions_adulthood$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_adulthood, digits = 3)} %")
-
-
-lr_F1_adulthood<-F1_Score(final_predictions_lr_adulthood$obs, final_predictions_lr_adulthood$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_adulthood, digits = 3)}")
-
 
 
 # PRECISION
@@ -2029,21 +2129,21 @@ outcome_and_exposure_old_age <- as.formula(paste(outcome_model_old_age, "~", pas
 
 # 3. TRAINING THE MODEL
 
-fit_lr_old_age <- train(outcome_and_exposure_old_age,          #F1:0,3915  Success:31,126%
+fit_cforest_old_age <- train(outcome_and_exposure_old_age,       
                 data = data_train_old_age_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_old_age, file = "lr_old_age_model.Rda")
+saveRDS(fit_cforest_old_age, file = "cforest_old_age_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_old_age, data_test_old_age, prob_threshold=0.5){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_old_age, data_test_old_age, prob_threshold=0.5){     # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_old_age, newdata=data_test_old_age, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_old_age, newdata=data_test_old_age, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_old_age$patientunitstayid          
 
@@ -2057,16 +2157,16 @@ getFinalPredictions = function(fit_lr_old_age, data_test_old_age, prob_threshold
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_old_age = getFinalPredictions(fit_lr_old_age, data_test_old_age)
-final_predictions_old_age <- final_predictions_lr_old_age
+final_predictions_cforest_old_age = getFinalPredictions(fit_cforest_old_age, data_test_old_age)
+final_predictions_old_age <- final_predictions_cforest_old_age
 
 
 # 5. CONFUSION MATRIX
@@ -2085,21 +2185,6 @@ levels(final_predictions_old_age$pred)
 # confusion matrix
 
 matrix_7 <- confusionMatrix(final_predictions_old_age$pred, final_predictions_old_age$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_old_age <- mean(final_predictions_old_age$obs == final_predictions_old_age$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_old_age, digits = 3)} %")
-
-
-lr_F1_old_age <-F1_Score(final_predictions_lr_old_age$obs, final_predictions_lr_old_age$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_old_age, digits = 3)}")
-
 
 
 # PRECISION
@@ -2154,21 +2239,21 @@ outcome_and_exposure_teach_true <- as.formula(paste(outcome_model_teach_true, "~
 
 # 3. TRAINING THE MODEL
 
-fit_lr_teach_true <- train(outcome_and_exposure_teach_true,          #F1:0,5316   Success:38,679%
+fit_cforest_teach_true <- train(outcome_and_exposure_teach_true,      
                 data = data_train_teach_true_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_teach_true, file = "lr_teach_true_model.Rda")
+saveRDS(fit_cforest_teach_true, file = "cforest_teach_true_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_teach_true, data_test_teach_true, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_teach_true, data_test_teach_true, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_teach_true, newdata=data_test_teach_true, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_teach_true, newdata=data_test_teach_true, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_teach_true$patientunitstayid          
 
@@ -2182,16 +2267,16 @@ getFinalPredictions = function(fit_lr_teach_true, data_test_teach_true, prob_thr
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_teach_true = getFinalPredictions(fit_lr_teach_true, data_test_teach_true)
-final_predictions_teach_true <- final_predictions_lr_teach_true
+final_predictions_cforest_teach_true = getFinalPredictions(fit_cforest_teach_true, data_test_teach_true)
+final_predictions_teach_true <- final_predictions_cforest_teach_true
 
 
 # 5. CONFUSION MATRIX
@@ -2210,21 +2295,6 @@ levels(final_predictions_teach_true$pred)
 # confusion matrix
 
 matrix_8 <- confusionMatrix(final_predictions_teach_true$pred, final_predictions_teach_true$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_teach_true <- mean(final_predictions_teach_true$obs == final_predictions_teach_true$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_teach_true, digits = 3)} %")
-
-
-lr_F1_teach_true <-F1_Score(final_predictions_lr_teach_true$obs, final_predictions_lr_teach_true$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_teach_true, digits = 3)}")
-
 
 
 # PRECISION
@@ -2279,21 +2349,21 @@ outcome_and_exposure_teach_false <- as.formula(paste(outcome_model_teach_false, 
 
 # 3. TRAINING THE MODEL
 
-fit_lr_teach_false <- train(outcome_and_exposure_teach_false,          #F1:0,7348   Success:59,504%
+fit_cforest_teach_false <- train(outcome_and_exposure_teach_false,  
                 data = data_train_teach_false_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_teach_false, file = "lr_teach_false_model.Rda")
+saveRDS(fit_cforest_teach_false, file = "cforest_teach_false_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_teach_false, data_test_teach_false, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_teach_false, data_test_teach_false, prob_threshold=0.4){   # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_teach_false, newdata=data_test_teach_false, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_teach_false, newdata=data_test_teach_false, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_teach_false$patientunitstayid          
 
@@ -2307,16 +2377,16 @@ getFinalPredictions = function(fit_lr_teach_false, data_test_teach_false, prob_t
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_teach_false = getFinalPredictions(fit_lr_teach_false, data_test_teach_false)
-final_predictions_teach_false <- final_predictions_lr_teach_false
+final_predictions_cforest_teach_false = getFinalPredictions(fit_cforest_teach_false, data_test_teach_false)
+final_predictions_teach_false <- final_predictions_cforest_teach_false
 
 
 # 5. CONFUSION MATRIX
@@ -2335,21 +2405,6 @@ levels(final_predictions_teach_false$pred)
 # confusion matrix
 
 matrix_9 <- confusionMatrix(final_predictions_teach_false$pred, final_predictions_teach_false$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_teach_false <- mean(final_predictions_teach_false$obs == final_predictions_teach_false$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_teach_false, digits = 3)} %")
-
-
-lr_F1_teach_false <-F1_Score(final_predictions_lr_teach_false$obs, final_predictions_lr_teach_false$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_teach_false, digits = 3)}")
-
 
 
 # PRECISION
@@ -2404,21 +2459,21 @@ outcome_and_exposure_african_american <- as.formula(paste(outcome_model_african_
 
 # 3. TRAINING THE MODEL
 
-fit_lr_african_american <- train(outcome_and_exposure_african_american,          #F1:0,6933   Success:54,503%
+fit_cforest_african_american <- train(outcome_and_exposure_african_american,    
                 data = data_train_african_american_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_african_american, file = "lr_african_american_model.Rda")
+saveRDS(fit_cforest_african_american, file = "cforest_african_american_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_african_american, data_test_african_american, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_african_american, data_test_african_american, prob_threshold=0.4){  # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_african_american, newdata=data_test_african_american, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_african_american, newdata=data_test_african_american, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_african_american$patientunitstayid          
 
@@ -2432,16 +2487,16 @@ getFinalPredictions = function(fit_lr_african_american, data_test_african_americ
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_african_american = getFinalPredictions(fit_lr_african_american, data_test_african_american)
-final_predictions_african_american <- final_predictions_lr_african_american
+final_predictions_cforest_african_american = getFinalPredictions(fit_cforest_african_american, data_test_african_american)
+final_predictions_african_american <- final_predictions_cforest_african_american
 
 
 # 5. CONFUSION MATRIX
@@ -2460,21 +2515,6 @@ levels(final_predictions_african_american$pred)
 # confusion matrix
 
 matrix_10 <- confusionMatrix(final_predictions_african_american$pred, final_predictions_african_american$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_african_american <- mean(final_predictions_african_american$obs == final_predictions_african_american$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_african_american, digits = 3)} %")
-
-
-lr_F1_african_american <-F1_Score(final_predictions_lr_african_american$obs, final_predictions_lr_african_american$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_african_american, digits = 3)}")
-
 
 
 # PRECISION
@@ -2529,21 +2569,21 @@ outcome_and_exposure_asian <- as.formula(paste(outcome_model_asian, "~", paste(e
 
 # 3. TRAINING THE MODEL
 
-fit_lr_asian <- train(outcome_and_exposure_asian,          #F1:0,5807    Success:44,717%
+fit_cforest_asian <- train(outcome_and_exposure_asian,    
                 data = data_train_asian_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_asian, file = "lr_asian_model.Rda")
+saveRDS(fit_cforest_asian, file = "cforest_asian_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_asian, data_test_asian, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_asian, data_test_asian, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_asian, newdata=data_test_asian, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_asian, newdata=data_test_asian, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_asian$patientunitstayid          
 
@@ -2557,16 +2597,16 @@ getFinalPredictions = function(fit_lr_asian, data_test_asian, prob_threshold=0.5
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_asian = getFinalPredictions(fit_lr_asian, data_test_asian)
-final_predictions_asian <- final_predictions_lr_asian
+final_predictions_cforest_asian = getFinalPredictions(fit_cforest_asian, data_test_asian)
+final_predictions_asian <- final_predictions_cforest_asian
 
 
 # 5. CONFUSION MATRIX
@@ -2585,21 +2625,6 @@ levels(final_predictions_asian$pred)
 # confusion matrix
 
 matrix_11 <- confusionMatrix(final_predictions_asian$pred, final_predictions_asian$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_asian <- mean(final_predictions_asian$obs == final_predictions_asian$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_asian, digits = 3)} %")
-
-
-lr_F1_asian <-F1_Score(final_predictions_lr_asian$obs, final_predictions_lr_asian$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_asian, digits = 3)}")
-
 
 
 # PRECISION
@@ -2654,21 +2679,21 @@ outcome_and_exposure_caucasian <- as.formula(paste(outcome_model_caucasian, "~",
 
 # 3. TRAINING THE MODEL
 
-fit_lr_caucasian <- train(outcome_and_exposure_caucasian,          #F1:0,6941   Success:54,65%
+fit_cforest_caucasian <- train(outcome_and_exposure_caucasian,   
                 data = data_train_caucasian_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_caucasian, file = "lr_caucasian_model.Rda")
+saveRDS(fit_cforest_caucasian, file = "cforest_caucasian_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_caucasian, data_test_caucasian, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_caucasian, data_test_caucasian, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_caucasian, newdata=data_test_caucasian, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_caucasian, newdata=data_test_caucasian, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_caucasian$patientunitstayid          
 
@@ -2682,16 +2707,16 @@ getFinalPredictions = function(fit_lr_caucasian, data_test_caucasian, prob_thres
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_caucasian = getFinalPredictions(fit_lr_caucasian, data_test_caucasian)
-final_predictions_caucasian <- final_predictions_lr_caucasian
+final_predictions_cforest_caucasian = getFinalPredictions(fit_cforest_caucasian, data_test_caucasian)
+final_predictions_caucasian <- final_predictions_cforest_caucasian
 
 
 # 5. CONFUSION MATRIX
@@ -2710,21 +2735,6 @@ levels(final_predictions_caucasian$pred)
 # confusion matrix
 
 matrix_12 <- confusionMatrix(final_predictions_caucasian$pred, final_predictions_caucasian$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_caucasian <- mean(final_predictions_caucasian$obs == final_predictions_caucasian$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_caucasian, digits = 3)} %")
-
-
-lr_F1_caucasian <-F1_Score(final_predictions_lr_caucasian$obs, final_predictions_lr_caucasian$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_caucasian, digits = 3)}")
-
 
 
 # PRECISION
@@ -2779,21 +2789,21 @@ outcome_and_exposure_hispanic <- as.formula(paste(outcome_model_hispanic, "~", p
 
 # 3. TRAINING THE MODEL
 
-fit_lr_hispanic <- train(outcome_and_exposure_hispanic,          #F1:0,6503   Success:50,202%
+fit_cforest_hispanic <- train(outcome_and_exposure_hispanic,       
                 data = data_train_hispanic_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_hispanic, file = "lr_hispanic_model.Rda")
+saveRDS(fit_cforest_hispanic, file = "cforest_hispanic_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_hispanic, data_test_hispanic, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_hispanic, data_test_hispanic, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_hispanic, newdata=data_test_hispanic, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_hispanic, newdata=data_test_hispanic, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_hispanic$patientunitstayid          
 
@@ -2807,16 +2817,16 @@ getFinalPredictions = function(fit_lr_hispanic, data_test_hispanic, prob_thresho
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_hispanic = getFinalPredictions(fit_lr_hispanic, data_test_hispanic)
-final_predictions_hispanic <- final_predictions_lr_hispanic
+final_predictions_cforest_hispanic = getFinalPredictions(fit_cforest_hispanic, data_test_hispanic)
+final_predictions_hispanic <- final_predictions_cforest_hispanic
 
 
 # 5. CONFUSION MATRIX
@@ -2835,21 +2845,6 @@ levels(final_predictions_hispanic$pred)
 # confusion matrix
 
 matrix_13 <- confusionMatrix(final_predictions_hispanic$pred, final_predictions_hispanic$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_hispanic <- mean(final_predictions_hispanic$obs == final_predictions_hispanic$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_hispanic, digits = 3)} %")
-
-
-lr_F1_hispanic <-F1_Score(final_predictions_lr_hispanic$obs, final_predictions_lr_hispanic$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_hispanic, digits = 3)}")
-
 
 
 # PRECISION
@@ -2904,21 +2899,21 @@ outcome_and_exposure_native_american <- as.formula(paste(outcome_model_native_am
 
 # 3. TRAINING THE MODEL
 
-fit_lr_native_american <- train(outcome_and_exposure_native_american,          #F1:0,4293   Success:30,973%
+fit_cforest_native_american <- train(outcome_and_exposure_native_american,     
                 data = data_train_native_american_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_native_american, file = "lr_native_american_model.Rda")
+saveRDS(fit_cforest_native_american, file = "cforest_native_american_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_native_american, data_test_native_american, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_native_american, data_test_native_american, prob_threshold=0.4){    # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_native_american, newdata=data_test_native_american, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_native_american, newdata=data_test_native_american, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_native_american$patientunitstayid          
 
@@ -2932,16 +2927,16 @@ getFinalPredictions = function(fit_lr_native_american, data_test_native_american
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_native_american = getFinalPredictions(fit_lr_native_american, data_test_native_american)
-final_predictions_native_american <- final_predictions_lr_native_american
+final_predictions_cforest_native_american = getFinalPredictions(fit_cforest_native_american, data_test_native_american)
+final_predictions_native_american <- final_predictions_cforest_native_american
 
 
 # 5. CONFUSION MATRIX
@@ -2960,21 +2955,6 @@ levels(final_predictions_native_american$pred)
 # confusion matrix
 
 matrix_14 <- confusionMatrix(final_predictions_native_american$pred, final_predictions_native_american$obs, mode = "everything")
-
-
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_native_american <- mean(final_predictions_native_american$obs == final_predictions_native_american$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_native_american, digits = 3)} %")
-
-
-lr_F1_native_american <-F1_Score(final_predictions_lr_native_american$obs, final_predictions_lr_native_american$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_native_american, digits = 3)}")
-
 
 
 # PRECISION
@@ -3029,21 +3009,21 @@ outcome_and_exposure_ethnicity_other <- as.formula(paste(outcome_model_ethnicity
 
 # 3. TRAINING THE MODEL
 
-fit_lr_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,          #F1:0,6532    Success:51,267%
+fit_cforest_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,   
                 data = data_train_ethnicity_other_without_ID %>% as.data.frame(),
-                method = "LogitBoost",
+                method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_lr_ethnicity_other, file = "lr_ethnicity_other_model.Rda")
+saveRDS(fit_cforest_ethnicity_other, file = "cforest_ethnicity_other_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_lr_ethnicity_other, data_test_ethnicity_other, prob_threshold=0.5){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_cforest_ethnicity_other, data_test_ethnicity_other, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_lr_ethnicity_other, newdata=data_test_ethnicity_other, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_cforest_ethnicity_other, newdata=data_test_ethnicity_other, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_ethnicity_other$patientunitstayid          
 
@@ -3057,16 +3037,16 @@ getFinalPredictions = function(fit_lr_ethnicity_other, data_test_ethnicity_other
                                 prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
                                                                    rownames(prediction_probabilities_tmp)),])
   
-  final_predictions_tmp %<>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 1, 0))
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_lr_ethnicity_other = getFinalPredictions(fit_lr_ethnicity_other, data_test_ethnicity_other)
-final_predictions_ethnicity_other <- final_predictions_lr_ethnicity_other
+final_predictions_cforest_ethnicity_other = getFinalPredictions(fit_cforest_ethnicity_other, data_test_ethnicity_other)
+final_predictions_ethnicity_other <- final_predictions_cforest_ethnicity_other
 
 
 # 5. CONFUSION MATRIX
@@ -3087,21 +3067,6 @@ levels(final_predictions_ethnicity_other$pred)
 matrix_15 <- confusionMatrix(final_predictions_ethnicity_other$pred, final_predictions_ethnicity_other$obs, mode = "everything")
 
 
-# 6. PERCENTAGE (%) OF SUCCESSFUL
-
-success_ethnicity_other <- mean(final_predictions_ethnicity_other$obs == final_predictions_ethnicity_other$pred)*100
-
-str_glue("The percentage of correct answers is {round(success_ethnicity_other, digits = 3)} %")
-
-
-lr_F1_ethnicity_other <-F1_Score(final_predictions_lr_ethnicity_other$obs, final_predictions_lr_ethnicity_other$pred)
-
-# PRINT
-
-str_glue("lr model F1 is {round(lr_F1_ethnicity_other, digits = 3)}")
-
-
-
 # PRECISION
 
 m15_Precision <- matrix_15$table[1, 1] / sum(matrix_15$table[1, ])
@@ -3113,127 +3078,45 @@ m15_recall <- matrix_15$table[1, 1] / sum(matrix_15$table[, 1])
 ```
 
 
-
-## Resumen de resultados
-
-```{r}
-
-# SUBGROUP 1: Sex - male
-str_glue("The percentage of correct answers of SUBGROUP 1 (male) is {round(success_male, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 1 (male) is {round(lr_F1_male, digits = 3)}")
-
-# SUBGROUP 2: Sex - female
-str_glue("The percentage of correct answers of SUBGROUP 2 (female) is {round(success_female, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 2 (female) is {round(lr_F1_female, digits = 3)}")
-
-# SUBGROUP 3: age - 0-9 years   # NO DATA (min age = 17 years old)
-
-# SUBGROUP 4: age - 10-19 years
-str_glue("The percentage of correct answers of SUBGROUP 4 (adolescence) is {round(success_adolescence, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 4 (adolescence) is {round(lr_F1_adolescence, digits = 3)}")
-
-# SUBGROUP 5: age - 20-24 years
-str_glue("The percentage of correct answers of SUBGROUP 5 (youth) is {round(success_youth, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 5 (youth) is {round(lr_F1_youth, digits = 3)}")
-
-# SUBGROUP 6: age  25-64 years
-str_glue("The percentage of correct answers of SUBGROUP 6 (adulthood) is {round(success_adulthood, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 6 (adulthood) is {round(lr_F1_adulthood, digits = 3)}")
-
-# SUBGROUP 7: age - >65 years
-str_glue("The percentage of correct answers of SUBGROUP 7 (old_age) is {round(success_old_age, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 7 (old_age) is {round(lr_F1_old_age, digits = 3)}")
-
-# SUBGROUP 8: teachingstatus - 1 (TRUE)
-str_glue("The percentage of correct answers of SUBGROUP 8 (teachingstatus 1) is {round(success_teach_true, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 8 (teachingstatus 1) is {round(lr_F1_teach_true, digits = 3)}")
-
-# SUBGROUP 9: teachingstatus - 0 (FALSE)
-str_glue("The percentage of correct answers of SUBGROUP 9 (teachingstatus 0) is {round(success_teach_false, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 9 (teachingstatus 0) is {round(lr_F1_teach_false, digits = 3)}")
-
-# SUBGROUP 10: ethnicity - 0 (African American)
-str_glue("The percentage of correct answers of SUBGROUP 10 (African American) is {round(success_african_american, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 10 (African American) is {round(lr_F1_african_american, digits = 3)}")
-
-# SUBGROUP 11: ethnicity - 1 (Asian)
-str_glue("The percentage of correct answers of SUBGROUP 11 (Asian) is {round(success_asian, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 11 (Asian) is {round(lr_F1_asian, digits = 3)}")
-
-# SUBGROUP 12: ethnicity - 2 (Caucasian)
-str_glue("The percentage of correct answers of SUBGROUP 12 (Caucasian) is {round(success_caucasian, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 12 (Caucasian) is {round(lr_F1_caucasian, digits = 3)}")
-
-# SUBGROUP 13: ethnicity - 3 (Hispanic)
-str_glue("The percentage of correct answers of SUBGROUP 13 (Hispanic) is {round(success_hispanic, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 13 (Hispanic) is {round(lr_F1_hispanic, digits = 3)}")
-
-# SUBGROUP 14: ethnicity - 4 (Native American)
-str_glue("The percentage of correct answers of SUBGROUP 14 (Native American) is {round(success_native_american, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 14 (Native American) is {round(lr_F1_native_american, digits = 3)}")
-
-# SUBGROUP 15: ethnicity - 5 (Other ethnicity)
-str_glue("The percentage of correct answers of SUBGROUP 15 (Other ethnicity) is {round(success_ethnicity_other, digits = 3)} %")
-str_glue("lr model F1 of SUBGROUP 15 (Other ethnicity) is {round(lr_F1_ethnicity_other, digits = 3)}")
-
-```
-
 ## Comparative table Option B
 
 ```{r}
 
 # UPLOAD THE MODELS (Not needed if you have run all the code)
 
-fit_lr_male <- readRDS("lr_male_model.Rda")
-fit_lr_female <- readRDS("lr_female_model.Rda")
-fit_lr_adolescence <- readRDS("lr_adolescence_model.Rda")
-fit_lr_youth <- readRDS("lr_youth_model.Rda")
-fit_lr_adulthood <- readRDS("lr_adulthood_model.Rda")
-fit_lr_old_age <- readRDS("lr_old_age_model.Rda")
-fit_lr_teach_true <- readRDS("lr_teach_true_model.Rda")
-fit_lr_teach_false <- readRDS("lr_teach_false_model.Rda")
-fit_lr_african_american <- readRDS("lr_african_american_model.Rda")
-fit_lr_asian <- readRDS("lr_asian_model.Rda")
-fit_lr_caucasian <- readRDS("lr_caucasian_model.Rda")
-fit_lr_hispanic <- readRDS("lr_hispanic_model.Rda")
-fit_lr_native_american <- readRDS("lr_native_american_model.Rda")
-fit_lr_ethnicity_other <- readRDS("lr_ethnicity_other_model.Rda")
+fit_cforest_male <- readRDS("cforest_male_model.Rda")
+fit_cforest_female <- readRDS("cforest_female_model.Rda")
+fit_cforest_adolescence <- readRDS("cforest_adolescence_model.Rda")
+fit_cforest_youth <- readRDS("cforest_youth_model.Rda")
+fit_cforest_adulthood <- readRDS("cforest_adulthood_model.Rda")
+fit_cforest_old_age <- readRDS("cforest_old_age_model.Rda")
+fit_cforest_teach_true <- readRDS("cforest_teach_true_model.Rda")
+fit_cforest_teach_false <- readRDS("cforest_teach_false_model.Rda")
+fit_cforest_african_american <- readRDS("cforest_african_american_model.Rda")
+fit_cforest_asian <- readRDS("cforest_asian_model.Rda")
+fit_cforest_caucasian <- readRDS("cforest_caucasian_model.Rda")
+fit_cforest_hispanic <- readRDS("cforest_hispanic_model.Rda")
+fit_cforest_native_american <- readRDS("cforest_native_american_model.Rda")
+fit_cforest_ethnicity_other <- readRDS("cforest_ethnicity_other_model.Rda")
 
 # Before executing the following code it is necessary to execute the prediction section of each SUBGROUP.
 
 # PARAMETER F1.
 
-lr_F1_male <-F1_Score(final_predictions_lr_male$obs, final_predictions_lr_male$pred)
-lr_F1_female <-F1_Score(final_predictions_lr_female$obs, final_predictions_lr_female$pred)
-lr_F1_adolescence <-F1_Score(final_predictions_lr_adolescence$obs, final_predictions_lr_adolescence$pred)
-lr_F1_youth <-F1_Score(final_predictions_lr_youth$obs, final_predictions_lr_youth$pred)
-lr_F1_adulthood<-F1_Score(final_predictions_lr_adulthood$obs, final_predictions_lr_adulthood$pred)
-lr_F1_old_age <-F1_Score(final_predictions_lr_old_age$obs, final_predictions_lr_old_age$pred)
-lr_F1_teach_true <-F1_Score(final_predictions_lr_teach_true$obs, final_predictions_lr_teach_true$pred)
-lr_F1_teach_false <-F1_Score(final_predictions_lr_teach_false$obs, final_predictions_lr_teach_false$pred)
-lr_F1_african_american <-F1_Score(final_predictions_lr_african_american$obs, final_predictions_lr_african_american$pred)
-lr_F1_asian <-F1_Score(final_predictions_lr_asian$obs, final_predictions_lr_asian$pred)
-lr_F1_caucasian <-F1_Score(final_predictions_lr_caucasian$obs, final_predictions_lr_caucasian$pred)
-lr_F1_hispanic <-F1_Score(final_predictions_lr_hispanic$obs, final_predictions_lr_hispanic$pred)
-lr_F1_native_american <-F1_Score(final_predictions_lr_native_american$obs, final_predictions_lr_native_american$pred)
-lr_F1_ethnicity_other <-F1_Score(final_predictions_lr_ethnicity_other$obs, final_predictions_lr_ethnicity_other$pred)
-
-# PERCENTAGE (%) OF SUCCESS
-
-success_male <- mean(final_predictions_male$obs == final_predictions_male$pred)*100
-success_female <- mean(final_predictions_female$obs == final_predictions_female$pred)*100
-success_adolescence <- mean(final_predictions_adolescence$obs == final_predictions_adolescence$pred)*100
-success_youth <- mean(final_predictions_youth$obs == final_predictions_youth$pred)*100
-success_adulthood <- mean(final_predictions_adulthood$obs == final_predictions_adulthood$pred)*100
-success_old_age <- mean(final_predictions_old_age$obs == final_predictions_old_age$pred)*100
-success_teach_true <- mean(final_predictions_teach_true$obs == final_predictions_teach_true$pred)*100
-success_teach_false <- mean(final_predictions_teach_false$obs == final_predictions_teach_false$pred)*100
-success_african_american <- mean(final_predictions_african_american$obs == final_predictions_african_american$pred)*100
-success_asian <- mean(final_predictions_asian$obs == final_predictions_asian$pred)*100
-success_caucasian <- mean(final_predictions_caucasian$obs == final_predictions_caucasian$pred)*100
-success_hispanic <- mean(final_predictions_hispanic$obs == final_predictions_hispanic$pred)*100
-success_native_american <- mean(final_predictions_native_american$obs == final_predictions_native_american$pred)*100
-success_ethnicity_other <- mean(final_predictions_ethnicity_other$obs == final_predictions_ethnicity_other$pred)*100
+cforest_F1_male <-F1_Score(final_predictions_cforest_male$obs, final_predictions_cforest_male$pred)
+cforest_F1_female <-F1_Score(final_predictions_cforest_female$obs, final_predictions_cforest_female$pred)
+cforest_F1_adolescence <-F1_Score(final_predictions_cforest_adolescence$obs, final_predictions_cforest_adolescence$pred)
+cforest_F1_youth <-F1_Score(final_predictions_cforest_youth$obs, final_predictions_cforest_youth$pred)
+cforest_F1_adulthood<-F1_Score(final_predictions_cforest_adulthood$obs, final_predictions_cforest_adulthood$pred)
+cforest_F1_old_age <-F1_Score(final_predictions_cforest_old_age$obs, final_predictions_cforest_old_age$pred)
+cforest_F1_teach_true <-F1_Score(final_predictions_cforest_teach_true$obs, final_predictions_cforest_teach_true$pred)
+cforest_F1_teach_false <-F1_Score(final_predictions_cforest_teach_false$obs, final_predictions_cforest_teach_false$pred)
+cforest_F1_african_american <-F1_Score(final_predictions_cforest_african_american$obs, final_predictions_cforest_african_american$pred)
+cforest_F1_asian <-F1_Score(final_predictions_cforest_asian$obs, final_predictions_cforest_asian$pred)
+cforest_F1_caucasian <-F1_Score(final_predictions_cforest_caucasian$obs, final_predictions_cforest_caucasian$pred)
+cforest_F1_hispanic <-F1_Score(final_predictions_cforest_hispanic$obs, final_predictions_cforest_hispanic$pred)
+cforest_F1_native_american <-F1_Score(final_predictions_cforest_native_american$obs, final_predictions_cforest_native_american$pred)
+cforest_F1_ethnicity_other <-F1_Score(final_predictions_cforest_ethnicity_other$obs, final_predictions_cforest_ethnicity_other$pred)
 
 #-------------------------------------------------------------------------------
 
@@ -3249,7 +3132,7 @@ Precision <- round(c(m1_Precision, m2_Precision, m4_Precision, m5_Precision, m6_
 Recall <- round(c(m1_recall, m2_recall, m4_recall, m5_recall, m6_recall, m7_recall, m8_recall, m9_recall, m10_recall, m11_recall, m12_recall, m13_recall, m14_recall, m15_recall),3)
 
 # F1 parameter
-F1 <- round(c(lr_F1_male, lr_F1_female, lr_F1_adolescence, lr_F1_youth, lr_F1_adulthood, lr_F1_old_age, lr_F1_teach_true, lr_F1_teach_false, lr_F1_african_american, lr_F1_asian, lr_F1_caucasian, lr_F1_hispanic, lr_F1_native_american, lr_F1_ethnicity_other),3)
+F1 <- round(c(cforest_F1_male, cforest_F1_female, cforest_F1_adolescence, cforest_F1_youth, cforest_F1_adulthood, cforest_F1_old_age, cforest_F1_teach_true, cforest_F1_teach_false, cforest_F1_african_american, cforest_F1_asian, cforest_F1_caucasian, cforest_F1_hispanic, cforest_F1_native_american, cforest_F1_ethnicity_other),3)
 
 
 # Dataframe
@@ -3257,10 +3140,177 @@ comparative_option_B <- data.frame(Groups = Groups, Precision = Precision, Recal
 
 print(comparative_option_B)
 
+
+
+### PLOTS ###
+### CREATE FINAL DATASETS WITH PERFORMANCE VALUES
+# by categories
+data_plot <- data.frame(class = c("Global score",
+                     "Men",
+                     "Women",
+                     "Global score",
+                     "Adolescents",
+                     "Youth",
+                     "Adults",
+                     "Older adults",
+                     "Global score",
+                     "African American", 
+                     "Asian",
+                     "Caucasian",
+                     "Hispanic",
+                     "Native American",
+                     "Other/Unknown",
+                     "Global score",
+                     "Teaching\nstatus",
+                     "Not teaching\nstatus"),
+           category = c(rep("Gender", 3),
+                        rep("Age", 5), 
+                        rep("Ethnicity", 7),
+                        rep("Teaching status", 3)),
+           value = c(f1_global, cforest_F1_male, cforest_F1_female,
+                     f1_global,
+                     cforest_F1_adolescence, cforest_F1_youth, cforest_F1_adulthood,
+                     cforest_F1_old_age, 
+                     f1_global, cforest_F1_african_american, cforest_F1_asian,
+                     cforest_F1_caucasian, cforest_F1_hispanic,
+                     cforest_F1_native_american, cforest_F1_ethnicity_other,
+                     f1_global, cforest_F1_teach_true, cforest_F1_teach_false),
+           col = c(c(0, 1, 1, 
+                     0, 1, 1, 1, 1,
+                     0, 1, 1, 1, 1, 1, 1,
+                     0, 1, 1)))
+
+### PLOTS ###
+# plot by race
+plot_race <- data_plot %>%
+  filter(category == "Ethnicity") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Asian",
+                                   "Native American",
+                                   "Other/Unknown",
+                                   "Caucasian",
+                                   "African American",
+                                   "Hispanic",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Ethnicity",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+# plot by age group
+plot_age <- data_plot %>%
+  filter(category == "Age") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Older adults",
+                                   "Adults",
+                                   "Youth",
+                                   "Adolescents",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Age",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+# plot by gender
+plot_gender <- data_plot %>%
+  filter(category == "Gender") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Men",
+                                   "Women",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Gender",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+# plot by teaching status
+plot_teach <- data_plot %>%
+  filter(category == "Teaching status") %>%
+  mutate(class = reorder(class, value)) %>%
+  mutate(col = factor(col),
+         class = factor(class, 
+                        levels = c("Not teaching\nstatus",
+                                   "Teaching\nstatus",
+                                   "Global score"))) %>%
+  ggplot(aes(x = value, y = class, fill = col)) +
+  geom_col() +
+  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+  labs(title = "Teaching status",
+       x = "",
+       y = "") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_fill_nejm()
+
+# combine plots
+comb <- ggarrange(plot_gender, plot_age, 
+                  plot_race, plot_teach)
+
+# annotate figure
+annotate(comb,
+         top = "ML Stratified Fairness Analysis",
+         bottom = "F1-score",
+         left = "Subgroup")
+
+
+### EXTRA PLOT ###
+data_plot %>%
+  mutate(class = factor(class, levels = c("Global score",
+                                                "Men",
+                                                "Women",
+                                                "Adolescents",
+                                                "Youth",
+                                                "Adults",
+                                                "Older adults",
+                                                "African American",
+                                                "Asian",
+                                                "Caucasian",
+                                                "Hispanic",
+                                                "Native American",
+                                                "Other/Unknown",
+                                                "Not teaching status",
+                                                "Teaching status"))) %>%
+  ggplot(aes(y = value, x = class, fill = measure)) +
+  geom_col(position = position_dodge2(width = 2), width = 0.75) +
+  labs(x = "Subgroups",
+       y = "",
+       fill = "Performance measure") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        axis.text.x = element_text(angle = 90,
+                                   hjust = 0.95,
+                                   vjust = 0.2)) +
+  scale_fill_nejm() +
+  scale_y_continuous(breaks = seq(0, 1.1, 0.2),
+                     limits = c(0, 1.001))
+
 ```
-
-
-
 
 
 
