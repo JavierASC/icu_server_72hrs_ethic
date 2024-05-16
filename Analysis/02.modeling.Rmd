@@ -837,7 +837,7 @@ print(comparative_table)
 
 comparative_table_ordered <- comparative_table[order(comparative_table$F1, decreasing = TRUE),]
 
-print(tabla_comparativa_ordenada)
+print(comparative_table_ordered)
 
 ```
 
@@ -1603,6 +1603,7 @@ fit_cforest_male <- train(outcome_and_exposure_male,
                 metric = "F1")
 
 saveRDS(fit_cforest_male, file = "cforest_male_model.Rda")
+fit_cforest_male <- readRDS("cforest_male_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
@@ -1711,6 +1712,7 @@ fit_cforest_female <- train(outcome_and_exposure_female,
                 metric = "F1")
 
 saveRDS(fit_cforest_female, file = "cforest_female_model.Rda")
+fit_cforest_female <- readRDS("cforest_female_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
@@ -1822,6 +1824,8 @@ fit_cforest_adolescence <- train(outcome_and_exposure_adolescence,
                 metric = "F1")
 
 saveRDS(fit_cforest_adolescence, file = "cforest_adolescence_model.Rda")
+fit_cforest_adolescence <- readRDS("cforest_adolescence_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -1933,6 +1937,8 @@ fit_cforest_youth <- train(outcome_and_exposure_youth,          #F1:0,72372  Suc
                 metric = "F1")
 
 saveRDS(fit_cforest_youth, file = "cforest_youth_model.Rda")
+fit_cforest_youth <- readRDS("cforest_youth_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2044,6 +2050,8 @@ fit_cforest_adulthood <- train(outcome_and_exposure_adulthood,
                 metric = "F1")
 
 saveRDS(fit_cforest_adulthood, file = "cforest_adulthood_model.Rda")
+fit_cforest_adulthood <- readRDS("cforest_adulthood_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2154,6 +2162,8 @@ fit_cforest_old_age <- train(outcome_and_exposure_old_age,
                 metric = "F1")
 
 saveRDS(fit_cforest_old_age, file = "cforest_old_age_model.Rda")
+fit_cforest_old_age <- readRDS("cforest_old_age_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2264,6 +2274,8 @@ fit_cforest_teach_true <- train(outcome_and_exposure_teach_true,
                 metric = "F1")
 
 saveRDS(fit_cforest_teach_true, file = "cforest_teach_true_model.Rda")
+fit_cforest_teach_true <- readRDS("cforest_teach_true_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2374,6 +2386,8 @@ fit_cforest_teach_false <- train(outcome_and_exposure_teach_false,
                 metric = "F1")
 
 saveRDS(fit_cforest_teach_false, file = "cforest_teach_false_model.Rda")
+fit_cforest_teach_false <- readRDS("cforest_teach_false_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2484,6 +2498,8 @@ fit_cforest_african_american <- train(outcome_and_exposure_african_american,
                 metric = "F1")
 
 saveRDS(fit_cforest_african_american, file = "cforest_african_american_model.Rda")
+fit_cforest_african_american <- readRDS("cforest_african_american_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2594,6 +2610,8 @@ fit_cforest_asian <- train(outcome_and_exposure_asian,
                 metric = "F1")
 
 saveRDS(fit_cforest_asian, file = "cforest_asian_model.Rda")
+fit_cforest_asian <- readRDS("cforest_asian_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2704,6 +2722,8 @@ fit_cforest_caucasian <- train(outcome_and_exposure_caucasian,
                 metric = "F1")
 
 saveRDS(fit_cforest_caucasian, file = "cforest_caucasian_model.Rda")
+fit_cforest_caucasian <- readRDS("cforest_caucasian_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2814,6 +2834,8 @@ fit_cforest_hispanic <- train(outcome_and_exposure_hispanic,
                 metric = "F1")
 
 saveRDS(fit_cforest_hispanic, file = "cforest_hispanic_model.Rda")
+fit_cforest_hispanic <- readRDS("cforest_hispanic_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -2924,6 +2946,8 @@ fit_cforest_native_american <- train(outcome_and_exposure_native_american,
                 metric = "F1")
 
 saveRDS(fit_cforest_native_american, file = "cforest_native_american_model.Rda")
+fit_cforest_native_american <- readRDS("cforest_native_american_model.Rda")
+
 
 # 4. FINAL PREDICTIONS
 
@@ -3034,6 +3058,7 @@ fit_cforest_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,
                 metric = "F1")
 
 saveRDS(fit_cforest_ethnicity_other, file = "cforest_ethnicity_other_model.Rda")
+fit_cforest_ethnicity_other <- readRDS("cforest_ethnicity_other_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
