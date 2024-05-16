@@ -82,6 +82,7 @@ library(xgboost)
 library(modelr)
 library(tidybayes)
 library(ggpubr)
+library(ggsci)
 
 ```
 
@@ -1064,10 +1065,16 @@ ggplot(importance, aes(x = Overall, y = reorder(rownames(importance), Overall)))
 ```{r}
 
 # Creation of the final_predictions data joining our data test
+
 final_predictions <- final_predictions %>%
-  left_join(data_test %>% rename(ID = patientunitstayid), by = "ID") %>%
+  left_join(data_test %>% dplyr::rename(ID = patientunitstayid), by = "ID") %>%
   
+#-------------------------------------------------------------------------------
+
+# CEATION OF NECESSARY GROUPS  
+
   # create age groups
+  
   mutate(age_class = case_when(
     age > 0 & age < 10 ~ "childhood",
     age >= 10 & age < 20 ~ "adolescence",
@@ -1076,7 +1083,9 @@ final_predictions <- final_predictions %>%
     age >= 65 ~ "older adults"
   )) %>%
   
+  
   # create ethnicity classes
+  
   mutate(ethnicity = case_when(
     ethnicity == 0 ~ "African American",
     ethnicity == 1 ~ "Asian",
@@ -1088,7 +1097,10 @@ final_predictions <- final_predictions %>%
   ))
 
 
-# Calculation of performance measures at global level
+#-------------------------------------------------------------------------------
+
+# PERFORMANCE MEASURES AT GLOBAL LEVEL
+
 ## sensitivity
 sens <- sensitivity(final_predictions$pred, final_predictions$obs,
                     negative = "Alive")
@@ -1106,49 +1118,68 @@ recall <- sensitivity(final_predictions$pred, final_predictions$obs,
                     negative = "Alive")
 
 ## Global F1-measure
-f1_global <- F_meas(final_predictions$pred, final_predictions$obs)
+
+# f1_global <- F_meas(final_predictions$pred, final_predictions$obs) # Another way to obtain it
                     
+F1_global <-F1_Score(final_predictions$obs, final_predictions$pred)
 
-### CATEGORIES ###
+#-------------------------------------------------------------------------------
 
-### sex ### 
+# CATEGORIES #
+
+
+## sex ##
+
 # create only males subset
+
 final_subgroup <- final_predictions %>%
   filter(sex == "0")
 
 
 # calculation of performance measures at subgroup levels
 ## precision
+
 prec_male <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
+
 recall_male <- sensitivity(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
+
 f1_male <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
+F1_global <-F1_Score(final_predictions$obs, final_predictions$pred)
 
+#---
 
 # create only females subset
+
 final_subgroup <- final_predictions %>%
   filter(sex == "1")
 
+
 # calculation of performance measures at subgroup levels
 ## precision
+
 prec_female <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
+
 recall_female <- sensitivity(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
+
 f1_female <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
+#---
 
 ### AGE GROUPS ### 
+
 # create only ADOLESCENTS subset (there is no children)
 final_subgroup <- final_predictions %>%
   filter(age_class == "adolescence")
@@ -1166,8 +1197,10 @@ recall_adol <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 f1_adol <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
 
+#---
 
 # create only YOUTH subset
+
 final_subgroup <- final_predictions %>%
   filter(age_class == "youth")
 
@@ -1183,9 +1216,10 @@ recall_youth <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_youth <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only ADULTS subset 
+
 final_subgroup <- final_predictions %>%
   filter(age_class == "adulthood")
 
@@ -1201,9 +1235,10 @@ recall_adult <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_adult <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only OLDER ADULTS subset 
+
 final_subgroup <- final_predictions %>%
   filter(age_class == "older adults")
 
@@ -1219,9 +1254,10 @@ recall_older <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_older <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 ### ETHNICITY ###
+
 # create only AFRICAN AMERICAN subset
 final_subgroup <- final_predictions %>%
   filter(ethnicity == "African American")
@@ -1238,7 +1274,7 @@ recall_afam <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_afam <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only ASIAN subset
 final_subgroup <- final_predictions %>%
@@ -1256,7 +1292,7 @@ recall_asian <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_asian <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only CAUCASIAN subset
 final_subgroup <- final_predictions %>%
@@ -1274,7 +1310,7 @@ recall_cau <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_cau <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only HISPANIC subset
 final_subgroup <- final_predictions %>%
@@ -1292,7 +1328,7 @@ recall_hisp <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_hisp <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only NATIVE AMERICAN subset
 final_subgroup <- final_predictions %>%
@@ -1310,7 +1346,7 @@ recall_natam <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_natam <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only OTHER/UNKNOWN subset
 final_subgroup <- final_predictions %>%
@@ -1328,9 +1364,10 @@ recall_other <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_other <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 ### TEACHING STATUS ###
+
 # create only teaching status subset
 final_subgroup <- final_predictions %>%
   filter(teachingstatus == "1")
@@ -1347,7 +1384,7 @@ recall_teach <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_teach <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-
+#---
 
 # create only no teaching status subset
 final_subgroup <- final_predictions %>%
@@ -1365,9 +1402,10 @@ recall_nonteach <- sensitivity(final_subgroup$pred, final_subgroup$obs,
 ## F1-measure
 f1_nonteach <- F_meas(final_subgroup$pred, final_subgroup$obs)
 
-                    
+#-------------------------------------------------------------------------------                    
                                       
 ### CREATE FINAL DATASETS WITH PERFORMANCE VALUES
+
 # by categories
 data_plot <- data.frame(class = c("Global score",
                      "Men",
@@ -1391,20 +1429,23 @@ data_plot <- data.frame(class = c("Global score",
                         rep("Age", 5), 
                         rep("Ethnicity", 7),
                         rep("Teaching status", 3)),
-           value = c(f1_global, f1_male, f1_female,
-                     f1_global,
+           value = c(F1_global, f1_male, f1_female,
+                     F1_global,
                      f1_adol, f1_youth, f1_adult,
                      f1_older, 
-                     f1_global, f1_afam, f1_asian,
+                     F1_global, f1_afam, f1_asian,
                      f1_cau, f1_hisp,
                      f1_natam, f1_other,
-                     f1_global, f1_teach, f1_nonteach),
+                     F1_global, f1_teach, f1_nonteach),
            col = c(c(0, 1, 1, 
                      0, 1, 1, 1, 1,
                      0, 1, 1, 1, 1, 1, 1,
                      0, 1, 1)))
 
+#-------------------------------------------------------------------------------
+
 ### PLOTS ###
+
 # plot by race
 plot_race <- data_plot %>%
   filter(category == "Ethnicity") %>%
@@ -1420,7 +1461,7 @@ plot_race <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Ethnicity",
        x = "",
@@ -1428,6 +1469,8 @@ plot_race <- data_plot %>%
   theme_bw() +
   theme(legend.position = "none") +
   scale_fill_nejm()
+
+#---
 
 # plot by age group
 plot_age <- data_plot %>%
@@ -1442,7 +1485,7 @@ plot_age <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Age",
        x = "",
@@ -1450,6 +1493,8 @@ plot_age <- data_plot %>%
   theme_bw() +
   theme(legend.position = "none") +
   scale_fill_nejm()
+
+#---
 
 # plot by gender
 plot_gender <- data_plot %>%
@@ -1462,7 +1507,7 @@ plot_gender <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Gender",
        x = "",
@@ -1470,6 +1515,8 @@ plot_gender <- data_plot %>%
   theme_bw() +
   theme(legend.position = "none") +
   scale_fill_nejm()
+
+#---
 
 # plot by teaching status
 plot_teach <- data_plot %>%
@@ -1482,7 +1529,7 @@ plot_teach <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Teaching status",
        x = "",
@@ -1490,6 +1537,8 @@ plot_teach <- data_plot %>%
   theme_bw() +
   theme(legend.position = "none") +
   scale_fill_nejm()
+
+#---
 
 # combine plots
 comb <- ggarrange(plot_gender, plot_age, 
@@ -3070,6 +3119,8 @@ fit_cforest_ethnicity_other <- readRDS("cforest_ethnicity_other_model.Rda")
 
 # PARAMETER F1.
 
+F1_global <-F1_Score(final_predictions$obs, final_predictions$pred)
+
 cforest_F1_male <-F1_Score(final_predictions_cforest_male$obs, final_predictions_cforest_male$pred)
 cforest_F1_female <-F1_Score(final_predictions_cforest_female$obs, final_predictions_cforest_female$pred)
 cforest_F1_adolescence <-F1_Score(final_predictions_cforest_adolescence$obs, final_predictions_cforest_adolescence$pred)
@@ -3107,11 +3158,15 @@ comparative_option_B <- data.frame(Groups = Groups, Precision = Precision, Recal
 
 print(comparative_option_B)
 
+```
 
 
-### PLOTS ###
-### CREATE FINAL DATASETS WITH PERFORMANCE VALUES
-# by categories
+# PLOT Option B
+
+```{r}
+ 
+# CREATE FINAL DATASETS WITH PERFORMANCE VALUES (by categories)
+
 data_plot <- data.frame(class = c("Global score",
                      "Men",
                      "Women",
@@ -3134,21 +3189,22 @@ data_plot <- data.frame(class = c("Global score",
                         rep("Age", 5), 
                         rep("Ethnicity", 7),
                         rep("Teaching status", 3)),
-           value = c(f1_global, cforest_F1_male, cforest_F1_female,
-                     f1_global,
+           value = c(F1_global, cforest_F1_male, cforest_F1_female,
+                     F1_global,
                      cforest_F1_adolescence, cforest_F1_youth, cforest_F1_adulthood,
                      cforest_F1_old_age, 
-                     f1_global, cforest_F1_african_american, cforest_F1_asian,
+                     F1_global, cforest_F1_african_american, cforest_F1_asian,
                      cforest_F1_caucasian, cforest_F1_hispanic,
                      cforest_F1_native_american, cforest_F1_ethnicity_other,
-                     f1_global, cforest_F1_teach_true, cforest_F1_teach_false),
+                     F1_global, cforest_F1_teach_true, cforest_F1_teach_false),
            col = c(c(0, 1, 1, 
                      0, 1, 1, 1, 1,
                      0, 1, 1, 1, 1, 1, 1,
                      0, 1, 1)))
 
-### PLOTS ###
-# plot by race
+
+# Plot by race
+
 plot_race <- data_plot %>%
   filter(category == "Ethnicity") %>%
   mutate(class = reorder(class, value)) %>%
@@ -3163,7 +3219,7 @@ plot_race <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Ethnicity",
        x = "",
@@ -3172,7 +3228,9 @@ plot_race <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
-# plot by age group
+
+# Plot by age group
+
 plot_age <- data_plot %>%
   filter(category == "Age") %>%
   mutate(class = reorder(class, value)) %>%
@@ -3185,7 +3243,7 @@ plot_age <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Age",
        x = "",
@@ -3194,7 +3252,9 @@ plot_age <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
-# plot by gender
+
+# Plot by gender
+
 plot_gender <- data_plot %>%
   filter(category == "Gender") %>%
   mutate(class = reorder(class, value)) %>%
@@ -3205,7 +3265,7 @@ plot_gender <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Gender",
        x = "",
@@ -3214,7 +3274,9 @@ plot_gender <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
-# plot by teaching status
+
+# Plot by teaching status
+
 plot_teach <- data_plot %>%
   filter(category == "Teaching status") %>%
   mutate(class = reorder(class, value)) %>%
@@ -3225,7 +3287,7 @@ plot_teach <- data_plot %>%
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
-  geom_vline(xintercept = f1_global, linetype = 2) +
+  geom_vline(xintercept = F1_global, linetype = 2) +
   geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
   labs(title = "Teaching status",
        x = "",
@@ -3234,16 +3296,18 @@ plot_teach <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
-# combine plots
+
+# Combine plots
+
 comb <- ggarrange(plot_gender, plot_age, 
                   plot_race, plot_teach)
 
-# annotate figure
+# Annotate figure
+
 annotate_figure(comb,
          top = "ML Stratified Fairness Analysis",
          bottom = "F1-score",
          left = "Subgroup")
-
 
 ```
 
