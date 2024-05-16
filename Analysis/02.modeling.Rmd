@@ -3338,23 +3338,25 @@ annotate_figure(comb,
 
 
 
-################ OUTCOMES: PREDICTIONS USING `data_test`
+# OUTCOMES: PREDICTIONS USING `data_test`
 
 ```{r}
 
-## Aimed to predict a 95% confidence interval for predictions, we are going to conduct our model applying bootstrapping sampling (10 times)
+##BOOTSTRAPPING SAMPLING
+
+# Aimed to predict a 95% confidence interval for predictions, we are going to conduct our model applying bootstrapping sampling (10 times)
 
 # bootstrapping
 set.seed(42)
 
-## number of resamplings
+# number of resamplings
 k <- 10
 
 ## creation of a empty matrix for predictions
 predictions <- matrix(nrow = nrow(data_test), ncol = k)
 
 
-## loop for computing predictions for each sampling process
+# loop for computing predictions for each sampling process
 for (i in 1:k) {
   sample_indices <- sample(nrow(data_train), replace = TRUE)
   bootstrap_sample <- data_train[sample_indices, ]
@@ -3370,32 +3372,37 @@ for (i in 1:k) {
 }
 
 
-### to alleviate the computational work, predictions can be loaded directly using the code below
+# Save the predictions
 saveRDS(predictions, file = "pred_folds.Rda")
+
+# Load the predictions
 # predictions <- readRDS("pred_folds.Rda")
 
-# median for each row in prediction matrix
+#-------------------------------------------------------------------------------
+
+# Median for each row in prediction matrix
 newdata <- apply(predictions, 1, median_qi)
 
-# plot!
+# Plot!
 data_plot <- do.call(rbind, newdata)
 
+#---
 
-# Predictions for hours spent from hospital admission to ICU wards
+# Predictions for hours spent from hospital admission to ICU wards (prev_dept_los_hrs)
 data_test %>%
   mutate(pred = data_plot$y,
          pred.lower = data_plot$ymin,
          pred.upper = data_plot$ymax) %>%
-  group_by(prev_dept_los_hrs) %>%
-  summarise(pred.mean = mean(pred),
+  dplyr::group_by(prev_dept_los_hrs) %>%
+  dplyr::summarise(pred.mean = mean(pred),
             pred.low = mean(pred.lower),
             pred.up = mean(pred.upper)) %>%
   ungroup() %>%
-  mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
-  filter(prev_dept_los_hrs <= 100) %>%
-  filter(prev_rounded %in% seq(0, 100, 1)) %>%
-  group_by(prev_rounded) %>%
-  summarise(pred.mean = mean(pred.mean),
+  dplyr::mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
+  dplyr::filter(prev_dept_los_hrs <= 100) %>%
+  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
+  dplyr::group_by(prev_rounded) %>%
+  dplyr::summarise(pred.mean = mean(pred.mean),
             pred.low = mean(pred.low),
             pred.up = mean(pred.up)) %>%
   ungroup() %>%
@@ -3418,14 +3425,15 @@ data_test %>%
   ggsci::scale_color_lancet() +
   guides(col = guide_legend(override.aes = list(alpha = 1)))
 
+#---
 
 # Predictions for age
 data_test %>%
-  mutate(pred = data_plot$y,
+  dplyr::mutate(pred = data_plot$y,
          pred.lower = data_plot$ymin,
          pred.upper = data_plot$ymax) %>%
-  group_by(age) %>%
-  summarise(pred.mean = mean(pred),
+  dplyr::group_by(age) %>%
+  dplyr::summarise(pred.mean = mean(pred),
             pred.low = mean(pred.lower),
             pred.up = mean(pred.upper)) %>%
   ungroup() %>%
@@ -3446,26 +3454,27 @@ data_test %>%
   scale_color_lancet() +
   guides(col = guide_legend(override.aes = list(alpha = 1)))
 
+#---
 
 # Predictions for hours spent from admission to ICU admission by apache_other
 data_test %>%
-  mutate(pred = data_plot$y,
+  dplyr::mutate(pred = data_plot$y,
          pred.lower = data_plot$ymin,
          pred.upper = data_plot$ymax) %>%
-  group_by(prev_dept_los_hrs, apache_other) %>%
-  summarise(pred.mean = mean(pred),
+  dplyr::group_by(prev_dept_los_hrs, apache_other) %>%
+  dplyr::summarise(pred.mean = mean(pred),
             pred.low = mean(pred.lower),
             pred.up = mean(pred.upper)) %>%
   ungroup() %>%
-  mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
-  filter(prev_dept_los_hrs <= 100) %>%
-  filter(prev_rounded %in% seq(0, 100, 1)) %>%
-  group_by(prev_rounded, apache_other) %>%
-  summarise(pred.mean = mean(pred.mean),
+  dplyr::mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
+  dplyr::filter(prev_dept_los_hrs <= 100) %>%
+  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
+  dplyr::group_by(prev_rounded, apache_other) %>%
+  dplyr::summarise(pred.mean = mean(pred.mean),
             pred.low = mean(pred.low),
             pred.up = mean(pred.up)) %>%
   ungroup() %>%
-  mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+  dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
          apache_other = factor(apache_other)) %>%
   ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
   geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
@@ -3473,8 +3482,8 @@ data_test %>%
                mutate(prev_rounded = round(prev_dept_los_hrs, 1),
                       pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
                filter(prev_dept_los_hrs <= 100) %>%
-  filter(prev_rounded %in% seq(0, 100, 1)) %>%
-    mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
+    dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
          apache_other = factor(apache_other))) +
   geom_line() +
   geom_lineribbon(aes(ymin = pred.low,
@@ -3491,23 +3500,23 @@ data_test %>%
 
 
 data_test %>%
-  mutate(pred = data_plot$y,
+  dplyr::mutate(pred = data_plot$y,
          pred.lower = data_plot$ymin,
          pred.upper = data_plot$ymax) %>%
-  group_by(prev_dept_los_hrs, apache_other, hist_diabetes_bin) %>%
-  summarise(pred.mean = mean(pred),
+  dplyr::group_by(prev_dept_los_hrs, apache_other, hist_diabetes_bin) %>%
+  dplyr::summarise(pred.mean = mean(pred),
             pred.low = mean(pred.lower),
             pred.up = mean(pred.upper)) %>%
   ungroup() %>%
-  mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
-  filter(prev_dept_los_hrs <= 100) %>%
-  filter(prev_rounded %in% seq(0, 100, 1)) %>%
-  group_by(prev_rounded, apache_other, hist_diabetes_bin) %>%
-  summarise(pred.mean = mean(pred.mean),
+  dplyr::mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
+  dplyr::filter(prev_dept_los_hrs <= 100) %>%
+  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
+  dplyr::group_by(prev_rounded, apache_other, hist_diabetes_bin) %>%
+  dplyr::summarise(pred.mean = mean(pred.mean),
             pred.low = mean(pred.low),
             pred.up = mean(pred.up)) %>%
   ungroup() %>%
-  mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+  dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
          apache_other = factor(apache_other),
          hist_diabetes_bin = ifelse(hist_diabetes_bin == "1", "No Diabetes", "Diabetes"),
          hist_diabetes_bin = factor(hist_diabetes_bin,
@@ -3519,8 +3528,8 @@ data_test %>%
                mutate(prev_rounded = round(prev_dept_los_hrs, 1),
                       pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
                filter(prev_dept_los_hrs <= 100) %>%
-  filter(prev_rounded %in% seq(0, 100, 1)) %>%
-    mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
+  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
+    dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
          apache_other = factor(apache_other),
          hist_diabetes_bin = ifelse(hist_diabetes_bin == "1", "No Diabetes", "Diabetes"),
          hist_diabetes_bin = factor(hist_diabetes_bin,
