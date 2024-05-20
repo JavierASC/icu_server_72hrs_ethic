@@ -217,6 +217,7 @@ final_df_selected$ethnicity <- as.factor(final_df_selected$ethnicity)
 # spo2_clear F1 drops a little
 # region has missing values
 # numbedscategory has missing values
+# apache_other could add noise.
 
 
 # Essential Variables (if they are eliminated, the F1 decreases)
@@ -231,7 +232,7 @@ final_df_selected$ethnicity <- as.factor(final_df_selected$ethnicity)
 ## Added: region, numbedscategory, teachingstatus (it reduces success)
 
 final_df_selected <- final_df_selected %>%
-  select(patientunitstayid, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, sodium_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, nibp_systolic_clear, nibp_mean_clear, temperature_clear, glucose_clear, potassium_clear, hemoglobin_clear, calcium_clear, norepinephrine, phenylephrine, heparin, warfarin, heartrate_clear, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, apache_other, teachingstatus)
+  select(patientunitstayid, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, sodium_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, nibp_systolic_clear, nibp_mean_clear, temperature_clear, glucose_clear, potassium_clear, hemoglobin_clear, calcium_clear, norepinephrine, phenylephrine, heparin, warfarin, heartrate_clear, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, teachingstatus)
 
 # stview(dfSummary(final_df_selected))
 
@@ -535,10 +536,10 @@ summary_resamps %>% t() %>% kable()
 
 # SELECT THE HIGHEST PERFORMANCE MODEL
 
-# Save the model with the highest performance.
+# Save the model with the highest performance. We will focuss on "Balanced_Accuracy.Mean"
 
 best_performing_model<-get(
-  rownames(summary_resamps)[which(summary_resamps$F1.Max == max(summary_resamps$F1.Max))])
+  rownames(summary_resamps)[which(summary_resamps$Balanced_Accuracy.Mean == max(summary_resamps$Balanced_Accuracy.Mean))])
 
 # Extract model name
 
@@ -548,19 +549,22 @@ best_performing_model_name<-best_performing_model$method
 
 str_glue("The best model is {best_performing_model_name}")
 
+# Select the model
+
+fit_best <- fit_xgb
 
 #---------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------
 
 # PREDICTOR EVALUATION. (From now on data_test is used)
 
-# Predictions are calculated for all test set data in all models. It is defined Alive=1 and Dead=0
+# Predictions are calculated for all test set data in all models. It is defined Alive=0 and Expired=1
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){                    # Change the fit to the best_model.
+getFinalPredictions = function(fit_best, data_test, prob_threshold=0.4){               
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest, newdata=data_test, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best, newdata=data_test, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
 
@@ -575,7 +579,7 @@ getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){     
                                                                    rownames(prediction_probabilities_tmp)),])
   
   final_predictions_tmp = final_predictions_tmp %>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))  # If "Alive" (alive probability) exceeds the threshold, enter 0
   
   final_predictions_tmp
 }
@@ -586,7 +590,7 @@ getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){     
 
 # Use the getFinalPredictions function on the best model and all the others.
 
-final_predictions = getFinalPredictions(best_performing_model, data_test)
+final_predictions = getFinalPredictions(fit_best, data_test)
 final_predictions_gbm = getFinalPredictions(fit_gbm, data_test)
 final_predictions_rf = getFinalPredictions(fit_rf, data_test)
 final_predictions_ada = getFinalPredictions(fit_ada, data_test)
@@ -598,7 +602,8 @@ final_predictions_ranger = getFinalPredictions(fit_ranger, data_test)
 final_predictions_Linda = getFinalPredictions(fit_Linda, data_test)
 final_predictions_cforest = getFinalPredictions(fit_cforest, data_test)
 
-# Each model was evaluated manually to verify that the lr model is the one with the highest F1.
+# We evaluate the Balanced Accuracy, the F1 parameter and the confusion matrix, and select the model that meets the most criteria.
+# Although the xgbtree model has a superior balanced accuracy, since we prioritize guessing or classifying the dead based on the confusion matrix, we selected the gbm model.
 
 ```
 
@@ -845,7 +850,7 @@ print(comparative_table_ordered)
 
 # TRAINING ONLY THE SELECTED MODEL
 
-The selected model is cforest (Rborist).
+The selected model is gbm.
 
 ```{r}
 
@@ -856,9 +861,9 @@ set.seed(123)
 
 h_start_selected <- Sys.time() 
 
-fit_cforest <- train(outcome_and_exposure,             # 10min   F1: 0.99218
+fit_cforest <- train(outcome_and_exposure,
                 data = data_train_without_ID,    
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -872,21 +877,21 @@ h_end_selected <- Sys.time()
 
 # You can save the model so you don't have to run it again.
 
-saveRDS(fit_cforest, file = "cforest_model.Rda")
+saveRDS(fit_gbm, file = "gbm_model.Rda")
 
 # UPLOAD THE MODEL
 
 # If you have run model training previously you can load the saved model to save time.
 
-fit_cforest <- readRDS("cforest_model.Rda")
+fit_best <- readRDS("gbm_model.Rda")
 
 #---
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){                    # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best, data_test, prob_threshold=0.4){     
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest, newdata=data_test, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best, newdata=data_test, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
 
@@ -901,15 +906,15 @@ getFinalPredictions = function(fit_cforest, data_test, prob_threshold=0.4){     
                                                                    rownames(prediction_probabilities_tmp)),])
   
   final_predictions_tmp = final_predictions_tmp %>%
-    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))   # If "Alive" (alive probability) exceeds the threshold, enter 0
   
   final_predictions_tmp
 }
 
 # End of function
 
-final_predictions_cforest = getFinalPredictions(fit_cforest, data_test)
-final_predictions <- final_predictions_cforest
+final_predictions_best = getFinalPredictions(fit_best, data_test)
+final_predictions <- final_predictions_best
 
 ```
 
@@ -944,7 +949,7 @@ confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everythin
 # For imbalance classification tasks, it is recommended trying to move the probability threshold (by default 0.5) to achieve a better model performance
 
 # Applying a probability threshold of 0.4 (i.e., if the probability of living is 0.4 or more, the status of this patient is classified as "Alive")
-final_predictions_0.5 = getFinalPredictions(fit_cforest, data_test, prob_threshold = 0.5)
+final_predictions_0.5 = getFinalPredictions(fit_best, data_test, prob_threshold = 0.5)
 
 # transforming outcomes as factors
 
@@ -1025,11 +1030,11 @@ str_glue("The percentage of correct answers is {round(success, digits = 3)} %")
 
 # 2º. PARAMETER F1.
 
-cforest_F1 <-F1_Score(final_predictions$obs, final_predictions$pred)
+gbm_F1 <-F1_Score(final_predictions$obs, final_predictions$pred)
 
 # PRINT
 
-str_glue("cforest model F1 is {round(cforest_F1, digits = 3)}")
+str_glue("gbm model F1 is {round(cforest_F1, digits = 3)}")
 
 ```
 
@@ -1042,7 +1047,7 @@ A graphic representation is made of the importance of each variable in the model
 
 # Calculate the relative importance of the model variables.
 
-importance <- varImp(fit_cforest)
+importance <- varImp(fit_best)
 
 
 # ggplot
@@ -1594,22 +1599,22 @@ outcome_and_exposure_male <- as.formula(paste(outcome_model_male, "~", paste(exp
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_male <- train(outcome_and_exposure_male,       
+fit_best_male <- train(outcome_and_exposure_male,       
                 data = data_train_male_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_male, file = "cforest_male_model.Rda")
-fit_cforest_male <- readRDS("cforest_male_model.Rda")
+saveRDS(fit_best_male, file = "best_male_model.Rda")
+fit_best_male <- readRDS("best_male_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_male, data_test_male, prob_threshold=0.4){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_male, data_test_male, prob_threshold=0.4){                 # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_male, newdata=data_test_male, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_male, newdata=data_test_male, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_male$patientunitstayid          
 
@@ -1631,15 +1636,15 @@ getFinalPredictions = function(fit_cforest_male, data_test_male, prob_threshold=
 
 # End of function
 
-final_predictions_cforest_male = getFinalPredictions(fit_cforest_male, data_test_male)
-final_predictions_male <- final_predictions_cforest_male
+final_predictions_best_male = getFinalPredictions(fit_best_male, data_test_male)
+final_predictions_male <- final_predictions_best_male
 
 
 # 5. CONFUSION MATRIX
 
 
 # icu_mortality_72hrs
-final_predictions_male$obs <- as.factor(final_predictions_male$obs)
+final_predictions_malw$obs <- as.factor(final_predictions_male$obs)
 
 levels(final_predictions_male$obs)
 
