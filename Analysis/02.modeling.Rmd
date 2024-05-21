@@ -1570,7 +1570,8 @@ set.seed(123)
 #-------------------------------------------------------------------------------
 
 final_df_male <- final_df_selected %>%
-  filter(sex == 0)
+  filter(sex == 0) %>%
+  select(-sex)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -1644,7 +1645,7 @@ final_predictions_male <- final_predictions_best_male
 
 
 # icu_mortality_72hrs
-final_predictions_malw$obs <- as.factor(final_predictions_male$obs)
+final_predictions_male$obs <- as.factor(final_predictions_male$obs)
 
 levels(final_predictions_male$obs)
 
@@ -1679,7 +1680,8 @@ set.seed(123)
 #-------------------------------------------------------------------------------
 
 final_df_female <- final_df_selected %>%
-  filter(sex == 1)
+  filter(sex == 1) %>%
+  select(-sex)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -1708,22 +1710,22 @@ outcome_and_exposure_female <- as.formula(paste(outcome_model_female, "~", paste
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_female <- train(outcome_and_exposure_female,      
+fit_best_female <- train(outcome_and_exposure_female,      
                 data = data_train_female_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_female, file = "cforest_female_model.Rda")
-fit_cforest_female <- readRDS("cforest_female_model.Rda")
+saveRDS(fit_best_female, file = "best_female_model.Rda")
+fit_best_female <- readRDS("best_female_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_female, data_test_female, prob_threshold=0.4){          # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_female, data_test_female, prob_threshold=0.4){          # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_female, newdata=data_test_female, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_female, newdata=data_test_female, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_female$patientunitstayid          
 
@@ -1745,8 +1747,8 @@ getFinalPredictions = function(fit_cforest_female, data_test_female, prob_thresh
 
 # End of function
 
-final_predictions_cforest_female = getFinalPredictions(fit_cforest_female, data_test_female)
-final_predictions_female <- final_predictions_cforest_female
+final_predictions_best_female = getFinalPredictions(fit_best_female, data_test_female)
+final_predictions_female <- final_predictions_best_female
 
 
 # 5. CONFUSION MATRIX
@@ -1820,23 +1822,23 @@ outcome_and_exposure_adolescence <- as.formula(paste(outcome_model_adolescence, 
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_adolescence <- train(outcome_and_exposure_adolescence,  
+fit_best_adolescence <- train(outcome_and_exposure_adolescence,  
                 data = data_train_adolescence_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_adolescence, file = "cforest_adolescence_model.Rda")
-fit_cforest_adolescence <- readRDS("cforest_adolescence_model.Rda")
+saveRDS(fit_best_adolescence, file = "best_adolescence_model.Rda")
+fit_best_adolescence <- readRDS("best_adolescence_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_adolescence, data_test_adolescence, prob_threshold=0.4){  # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_adolescence, data_test_adolescence, prob_threshold=0.4){  # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_adolescence, newdata=data_test_adolescence, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_adolescence, newdata=data_test_adolescence, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_adolescence$patientunitstayid          
 
@@ -1858,8 +1860,8 @@ getFinalPredictions = function(fit_cforest_adolescence, data_test_adolescence, p
 
 # End of function
 
-final_predictions_cforest_adolescence = getFinalPredictions(fit_cforest_adolescence, data_test_adolescence)
-final_predictions_adolescence <- final_predictions_cforest_adolescence
+final_predictions_best_adolescence = getFinalPredictions(fit_best_adolescence, data_test_adolescence)
+final_predictions_adolescence <- final_predictions_best_adolescence
 
 
 # 5. CONFUSION MATRIX
@@ -1933,23 +1935,23 @@ outcome_and_exposure_youth <- as.formula(paste(outcome_model_youth, "~", paste(e
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_youth <- train(outcome_and_exposure_youth,          #F1:0,72372  Success:57,836%
+fit_best_youth <- train(outcome_and_exposure_youth,
                 data = data_train_youth_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_youth, file = "cforest_youth_model.Rda")
-fit_cforest_youth <- readRDS("cforest_youth_model.Rda")
+saveRDS(fit_best_youth, file = "best_youth_model.Rda")
+fit_best_youth <- readRDS("best_youth_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_youth, data_test_youth, prob_threshold=0.4){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_youth, data_test_youth, prob_threshold=0.4){                 # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_youth, newdata=data_test_youth, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_youth, newdata=data_test_youth, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_youth$patientunitstayid          
 
@@ -1971,8 +1973,8 @@ getFinalPredictions = function(fit_cforest_youth, data_test_youth, prob_threshol
 
 # End of function
 
-final_predictions_cforest_youth = getFinalPredictions(fit_cforest_youth, data_test_youth)
-final_predictions_youth <- final_predictions_cforest_youth
+final_predictions_best_youth = getFinalPredictions(fit_best_youth, data_test_youth)
+final_predictions_youth <- final_predictions_best_youth
 
 
 # 5. CONFUSION MATRIX
@@ -2046,23 +2048,23 @@ outcome_and_exposure_adulthood <- as.formula(paste(outcome_model_adulthood, "~",
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_adulthood <- train(outcome_and_exposure_adulthood,   
+fit_best_adulthood <- train(outcome_and_exposure_adulthood,   
                 data = data_train_adulthood_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_adulthood, file = "cforest_adulthood_model.Rda")
-fit_cforest_adulthood <- readRDS("cforest_adulthood_model.Rda")
+saveRDS(fit_best_adulthood, file = "best_adulthood_model.Rda")
+fit_best_adulthood <- readRDS("best_adulthood_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_adulthood, data_test_adulthood, prob_threshold=0.4){                 # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_adulthood, data_test_adulthood, prob_threshold=0.4){                 # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_adulthood, newdata=data_test_adulthood, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_adulthood, newdata=data_test_adulthood, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_adulthood$patientunitstayid          
 
@@ -2084,8 +2086,8 @@ getFinalPredictions = function(fit_cforest_adulthood, data_test_adulthood, prob_
 
 # End of function
 
-final_predictions_cforest_adulthood = getFinalPredictions(fit_cforest_adulthood, data_test_adulthood)
-final_predictions_adulthood <- final_predictions_cforest_adulthood
+final_predictions_best_adulthood = getFinalPredictions(fit_best_adulthood, data_test_adulthood)
+final_predictions_adulthood <- final_predictions_best_adulthood
 
 
 # 5. CONFUSION MATRIX
@@ -2158,23 +2160,23 @@ outcome_and_exposure_old_age <- as.formula(paste(outcome_model_old_age, "~", pas
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_old_age <- train(outcome_and_exposure_old_age,       
+fit_best_old_age <- train(outcome_and_exposure_old_age,       
                 data = data_train_old_age_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_old_age, file = "cforest_old_age_model.Rda")
-fit_cforest_old_age <- readRDS("cforest_old_age_model.Rda")
+saveRDS(fit_best_old_age, file = "best_old_age_model.Rda")
+fit_best_old_age <- readRDS("best_old_age_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_old_age, data_test_old_age, prob_threshold=0.5){     # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_old_age, data_test_old_age, prob_threshold=0.5){     # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_old_age, newdata=data_test_old_age, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_old_age, newdata=data_test_old_age, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_old_age$patientunitstayid          
 
@@ -2196,8 +2198,8 @@ getFinalPredictions = function(fit_cforest_old_age, data_test_old_age, prob_thre
 
 # End of function
 
-final_predictions_cforest_old_age = getFinalPredictions(fit_cforest_old_age, data_test_old_age)
-final_predictions_old_age <- final_predictions_cforest_old_age
+final_predictions_best_old_age = getFinalPredictions(fit_best_old_age, data_test_old_age)
+final_predictions_old_age <- final_predictions_best_old_age
 
 
 # 5. CONFUSION MATRIX
@@ -2241,7 +2243,8 @@ set.seed(123)
 # SUBGROUP 8: teachingstatus - 1 (TRUE)
 
 final_df_teach_true <- final_df_selected %>%
-  filter(teachingstatus == 1)
+  filter(teachingstatus == 1) %>%
+  select(-teachingstatus)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2270,23 +2273,23 @@ outcome_and_exposure_teach_true <- as.formula(paste(outcome_model_teach_true, "~
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_teach_true <- train(outcome_and_exposure_teach_true,      
+fit_best_teach_true <- train(outcome_and_exposure_teach_true,      
                 data = data_train_teach_true_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_teach_true, file = "cforest_teach_true_model.Rda")
-fit_cforest_teach_true <- readRDS("cforest_teach_true_model.Rda")
+saveRDS(fit_best_teach_true, file = "best_teach_true_model.Rda")
+fit_best_teach_true <- readRDS("best_teach_true_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_teach_true, data_test_teach_true, prob_threshold=0.4){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_teach_true, data_test_teach_true, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_teach_true, newdata=data_test_teach_true, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_teach_true, newdata=data_test_teach_true, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_teach_true$patientunitstayid          
 
@@ -2308,8 +2311,8 @@ getFinalPredictions = function(fit_cforest_teach_true, data_test_teach_true, pro
 
 # End of function
 
-final_predictions_cforest_teach_true = getFinalPredictions(fit_cforest_teach_true, data_test_teach_true)
-final_predictions_teach_true <- final_predictions_cforest_teach_true
+final_predictions_best_teach_true = getFinalPredictions(fit_best_teach_true, data_test_teach_true)
+final_predictions_teach_true <- final_predictions_best_teach_true
 
 
 # 5. CONFUSION MATRIX
@@ -2353,7 +2356,8 @@ set.seed(123)
 # SUBGROUP 9: teachingstatus - 0 (FALSE)
 
 final_df_teach_false <- final_df_selected %>%
-  filter(teachingstatus == 0)
+  filter(teachingstatus == 0) %>%
+  select(-teachingstatus)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2382,23 +2386,23 @@ outcome_and_exposure_teach_false <- as.formula(paste(outcome_model_teach_false, 
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_teach_false <- train(outcome_and_exposure_teach_false,  
+fit_best_teach_false <- train(outcome_and_exposure_teach_false,  
                 data = data_train_teach_false_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_teach_false, file = "cforest_teach_false_model.Rda")
-fit_cforest_teach_false <- readRDS("cforest_teach_false_model.Rda")
+saveRDS(fit_best_teach_false, file = "best_teach_false_model.Rda")
+fit_best_teach_false <- readRDS("best_teach_false_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_teach_false, data_test_teach_false, prob_threshold=0.4){   # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_teach_false, data_test_teach_false, prob_threshold=0.4){   # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_teach_false, newdata=data_test_teach_false, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_teach_false, newdata=data_test_teach_false, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_teach_false$patientunitstayid          
 
@@ -2420,8 +2424,8 @@ getFinalPredictions = function(fit_cforest_teach_false, data_test_teach_false, p
 
 # End of function
 
-final_predictions_cforest_teach_false = getFinalPredictions(fit_cforest_teach_false, data_test_teach_false)
-final_predictions_teach_false <- final_predictions_cforest_teach_false
+final_predictions_best_teach_false = getFinalPredictions(fit_best_teach_false, data_test_teach_false)
+final_predictions_teach_false <- final_predictions_best_teach_false
 
 
 # 5. CONFUSION MATRIX
@@ -2465,7 +2469,8 @@ set.seed(123)
 # SUBGROUP 10: ethnicity - 0 (African American)
 
 final_df_african_american <- final_df_selected %>%
-  filter(ethnicity == 0)
+  filter(ethnicity == 0) %>%
+  select(-ethnicity)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2494,23 +2499,23 @@ outcome_and_exposure_african_american <- as.formula(paste(outcome_model_african_
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_african_american <- train(outcome_and_exposure_african_american,    
+fit_best_african_american <- train(outcome_and_exposure_african_american,    
                 data = data_train_african_american_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_african_american, file = "cforest_african_american_model.Rda")
-fit_cforest_african_american <- readRDS("cforest_african_american_model.Rda")
+saveRDS(fit_best_african_american, file = "best_african_american_model.Rda")
+fit_best_african_american <- readRDS("best_african_american_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_african_american, data_test_african_american, prob_threshold=0.4){  # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_african_american, data_test_african_american, prob_threshold=0.4){  # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_african_american, newdata=data_test_african_american, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_african_american, newdata=data_test_african_american, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_african_american$patientunitstayid          
 
@@ -2532,8 +2537,8 @@ getFinalPredictions = function(fit_cforest_african_american, data_test_african_a
 
 # End of function
 
-final_predictions_cforest_african_american = getFinalPredictions(fit_cforest_african_american, data_test_african_american)
-final_predictions_african_american <- final_predictions_cforest_african_american
+final_predictions_best_african_american = getFinalPredictions(fit_best_african_american, data_test_african_american)
+final_predictions_african_american <- final_predictions_best_african_american
 
 
 # 5. CONFUSION MATRIX
@@ -2577,7 +2582,8 @@ set.seed(123)
 # SUBGROUP 11: ethnicity - 1 (Asian)
 
 final_df_asian <- final_df_selected %>%
-  filter(ethnicity == 1)
+  filter(ethnicity == 1) %>%
+  select(-ethnicity)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2606,23 +2612,23 @@ outcome_and_exposure_asian <- as.formula(paste(outcome_model_asian, "~", paste(e
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_asian <- train(outcome_and_exposure_asian,    
+fit_best_asian <- train(outcome_and_exposure_asian,    
                 data = data_train_asian_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_asian, file = "cforest_asian_model.Rda")
-fit_cforest_asian <- readRDS("cforest_asian_model.Rda")
+saveRDS(fit_best_asian, file = "best_asian_model.Rda")
+fit_best_asian <- readRDS("best_asian_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_asian, data_test_asian, prob_threshold=0.4){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_asian, data_test_asian, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_asian, newdata=data_test_asian, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_asian, newdata=data_test_asian, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_asian$patientunitstayid          
 
@@ -2644,8 +2650,8 @@ getFinalPredictions = function(fit_cforest_asian, data_test_asian, prob_threshol
 
 # End of function
 
-final_predictions_cforest_asian = getFinalPredictions(fit_cforest_asian, data_test_asian)
-final_predictions_asian <- final_predictions_cforest_asian
+final_predictions_best_asian = getFinalPredictions(fit_best_asian, data_test_asian)
+final_predictions_asian <- final_predictions_best_asian
 
 
 # 5. CONFUSION MATRIX
@@ -2689,7 +2695,8 @@ set.seed(123)
 # SUBGROUP 12: ethnicity - 2 (Caucasian)
 
 final_df_caucasian <- final_df_selected %>%
-  filter(ethnicity == 2)
+  filter(ethnicity == 2) %>%
+  select(-ethnicity)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2718,23 +2725,23 @@ outcome_and_exposure_caucasian <- as.formula(paste(outcome_model_caucasian, "~",
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_caucasian <- train(outcome_and_exposure_caucasian,   
+fit_best_caucasian <- train(outcome_and_exposure_caucasian,   
                 data = data_train_caucasian_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_caucasian, file = "cforest_caucasian_model.Rda")
-fit_cforest_caucasian <- readRDS("cforest_caucasian_model.Rda")
+saveRDS(fit_best_caucasian, file = "best_caucasian_model.Rda")
+fit_best_caucasian <- readRDS("best_caucasian_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_caucasian, data_test_caucasian, prob_threshold=0.4){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_caucasian, data_test_caucasian, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_caucasian, newdata=data_test_caucasian, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_caucasian, newdata=data_test_caucasian, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_caucasian$patientunitstayid          
 
@@ -2756,8 +2763,8 @@ getFinalPredictions = function(fit_cforest_caucasian, data_test_caucasian, prob_
 
 # End of function
 
-final_predictions_cforest_caucasian = getFinalPredictions(fit_cforest_caucasian, data_test_caucasian)
-final_predictions_caucasian <- final_predictions_cforest_caucasian
+final_predictions_best_caucasian = getFinalPredictions(fit_best_caucasian, data_test_caucasian)
+final_predictions_caucasian <- final_predictions_best_caucasian
 
 
 # 5. CONFUSION MATRIX
@@ -2801,7 +2808,8 @@ set.seed(123)
 # SUBGROUP 13: ethnicity - 3 (Hispanic)
 
 final_df_hispanic <- final_df_selected %>%
-  filter(ethnicity == 3)
+  filter(ethnicity == 3) %>%
+  select(-ethnicity)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2830,23 +2838,23 @@ outcome_and_exposure_hispanic <- as.formula(paste(outcome_model_hispanic, "~", p
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_hispanic <- train(outcome_and_exposure_hispanic,       
+fit_best_hispanic <- train(outcome_and_exposure_hispanic,       
                 data = data_train_hispanic_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_hispanic, file = "cforest_hispanic_model.Rda")
-fit_cforest_hispanic <- readRDS("cforest_hispanic_model.Rda")
+saveRDS(fit_best_hispanic, file = "best_hispanic_model.Rda")
+fit_best_hispanic <- readRDS("best_hispanic_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_hispanic, data_test_hispanic, prob_threshold=0.4){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_hispanic, data_test_hispanic, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_hispanic, newdata=data_test_hispanic, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_hispanic, newdata=data_test_hispanic, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_hispanic$patientunitstayid          
 
@@ -2868,8 +2876,8 @@ getFinalPredictions = function(fit_cforest_hispanic, data_test_hispanic, prob_th
 
 # End of function
 
-final_predictions_cforest_hispanic = getFinalPredictions(fit_cforest_hispanic, data_test_hispanic)
-final_predictions_hispanic <- final_predictions_cforest_hispanic
+final_predictions_best_hispanic = getFinalPredictions(fit_best_hispanic, data_test_hispanic)
+final_predictions_hispanic <- final_predictions_best_hispanic
 
 
 # 5. CONFUSION MATRIX
@@ -2913,7 +2921,8 @@ set.seed(123)
 # SUBGROUP 14: ethnicity - 4 (Native American)
 
 final_df_native_american <- final_df_selected %>%
-  filter(ethnicity == 4)
+  filter(ethnicity == 4) %>%
+  select(-ethnicity)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -2942,23 +2951,23 @@ outcome_and_exposure_native_american <- as.formula(paste(outcome_model_native_am
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_native_american <- train(outcome_and_exposure_native_american,     
+fit_best_native_american <- train(outcome_and_exposure_native_american,     
                 data = data_train_native_american_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_native_american, file = "cforest_native_american_model.Rda")
-fit_cforest_native_american <- readRDS("cforest_native_american_model.Rda")
+saveRDS(fit_best_native_american, file = "best_native_american_model.Rda")
+fit_best_native_american <- readRDS("best_native_american_model.Rda")
 
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_native_american, data_test_native_american, prob_threshold=0.4){    # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_native_american, data_test_native_american, prob_threshold=0.4){    # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_native_american, newdata=data_test_native_american, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_native_american, newdata=data_test_native_american, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_native_american$patientunitstayid          
 
@@ -2980,8 +2989,8 @@ getFinalPredictions = function(fit_cforest_native_american, data_test_native_ame
 
 # End of function
 
-final_predictions_cforest_native_american = getFinalPredictions(fit_cforest_native_american, data_test_native_american)
-final_predictions_native_american <- final_predictions_cforest_native_american
+final_predictions_best_native_american = getFinalPredictions(fit_best_native_american, data_test_native_american)
+final_predictions_native_american <- final_predictions_best_native_american
 
 
 # 5. CONFUSION MATRIX
@@ -3025,7 +3034,8 @@ set.seed(123)
 # SUBGROUP 15: ethnicity - 5 (Other/Unknown)
 
 final_df_ethnicity_other <- final_df_selected %>%
-  filter(ethnicity == 5)
+  filter(ethnicity == 5) %>%
+  select(-ethnicity)
 
 # 1. TRAIN-TEST SELECTION
 
@@ -3054,22 +3064,22 @@ outcome_and_exposure_ethnicity_other <- as.formula(paste(outcome_model_ethnicity
 
 # 3. TRAINING THE MODEL
 
-fit_cforest_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,   
+fit_best_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,   
                 data = data_train_ethnicity_other_without_ID %>% as.data.frame(),
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
 
-saveRDS(fit_cforest_ethnicity_other, file = "cforest_ethnicity_other_model.Rda")
-fit_cforest_ethnicity_other <- readRDS("cforest_ethnicity_other_model.Rda")
+saveRDS(fit_best_ethnicity_other, file = "best_ethnicity_other_model.Rda")
+fit_best_ethnicity_other <- readRDS("best_ethnicity_other_model.Rda")
 
 # 4. FINAL PREDICTIONS
 
-getFinalPredictions = function(fit_cforest_ethnicity_other, data_test_ethnicity_other, prob_threshold=0.4){       # Change the fit to the best_model. 
+getFinalPredictions = function(fit_best_ethnicity_other, data_test_ethnicity_other, prob_threshold=0.4){       # Change the fit to the best_model. 
                                                                                            
-  prediction_probabilities_tmp = predict(fit_cforest_ethnicity_other, newdata=data_test_ethnicity_other, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_ethnicity_other, newdata=data_test_ethnicity_other, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test_ethnicity_other$patientunitstayid          
 
@@ -3091,8 +3101,8 @@ getFinalPredictions = function(fit_cforest_ethnicity_other, data_test_ethnicity_
 
 # End of function
 
-final_predictions_cforest_ethnicity_other = getFinalPredictions(fit_cforest_ethnicity_other, data_test_ethnicity_other)
-final_predictions_ethnicity_other <- final_predictions_cforest_ethnicity_other
+final_predictions_best_ethnicity_other = getFinalPredictions(fit_best_ethnicity_other, data_test_ethnicity_other)
+final_predictions_ethnicity_other <- final_predictions_best_ethnicity_other
 
 
 # 5. CONFUSION MATRIX
@@ -3130,20 +3140,20 @@ m15_recall <- matrix_15$table[1, 1] / sum(matrix_15$table[, 1])
 
 # UPLOAD THE MODELS (Not needed if you have run all the code)
 
-fit_cforest_male <- readRDS("cforest_male_model.Rda")
-fit_cforest_female <- readRDS("cforest_female_model.Rda")
-fit_cforest_adolescence <- readRDS("cforest_adolescence_model.Rda")
-fit_cforest_youth <- readRDS("cforest_youth_model.Rda")
-fit_cforest_adulthood <- readRDS("cforest_adulthood_model.Rda")
-fit_cforest_old_age <- readRDS("cforest_old_age_model.Rda")
-fit_cforest_teach_true <- readRDS("cforest_teach_true_model.Rda")
-fit_cforest_teach_false <- readRDS("cforest_teach_false_model.Rda")
-fit_cforest_african_american <- readRDS("cforest_african_american_model.Rda")
-fit_cforest_asian <- readRDS("cforest_asian_model.Rda")
-fit_cforest_caucasian <- readRDS("cforest_caucasian_model.Rda")
-fit_cforest_hispanic <- readRDS("cforest_hispanic_model.Rda")
-fit_cforest_native_american <- readRDS("cforest_native_american_model.Rda")
-fit_cforest_ethnicity_other <- readRDS("cforest_ethnicity_other_model.Rda")
+fit_best_male <- readRDS("best_male_model.Rda")          
+fit_best_female <- readRDS("best_female_model.Rda")          
+# fit_best_adolescence <- readRDS("best_adolescence_model.Rda")             # Not possible with gbm model
+# fit_best_youth <- readRDS("best_youth_model.Rda")                         # Not possible with gbm model
+# fit_best_adulthood <- readRDS("best_adulthood_model.Rda")                 # Not possible with gbm model
+fit_best_old_age <- readRDS("best_old_age_model.Rda")
+fit_best_teach_true <- readRDS("best_teach_true_model.Rda")
+fit_best_teach_false <- readRDS("best_teach_false_model.Rda")
+fit_best_african_american <- readRDS("best_african_american_model.Rda")
+fit_best_asian <- readRDS("best_asian_model.Rda")
+fit_best_caucasian <- readRDS("best_caucasian_model.Rda")
+fit_best_hispanic <- readRDS("best_hispanic_model.Rda")
+# fit_best_native_american <- readRDS("best_native_american_model.Rda")     # Not possible with gbm model
+fit_best_ethnicity_other <- readRDS("best_ethnicity_other_model.Rda")
 
 # Before executing the following code it is necessary to execute the prediction section of each SUBGROUP.
 
@@ -3151,39 +3161,50 @@ fit_cforest_ethnicity_other <- readRDS("cforest_ethnicity_other_model.Rda")
 
 F1_global <-F1_Score(final_predictions$obs, final_predictions$pred)
 
-cforest_F1_male <-F1_Score(final_predictions_cforest_male$obs, final_predictions_cforest_male$pred)
-cforest_F1_female <-F1_Score(final_predictions_cforest_female$obs, final_predictions_cforest_female$pred)
-cforest_F1_adolescence <-F1_Score(final_predictions_cforest_adolescence$obs, final_predictions_cforest_adolescence$pred)
-cforest_F1_youth <-F1_Score(final_predictions_cforest_youth$obs, final_predictions_cforest_youth$pred)
-cforest_F1_adulthood<-F1_Score(final_predictions_cforest_adulthood$obs, final_predictions_cforest_adulthood$pred)
-cforest_F1_old_age <-F1_Score(final_predictions_cforest_old_age$obs, final_predictions_cforest_old_age$pred)
-cforest_F1_teach_true <-F1_Score(final_predictions_cforest_teach_true$obs, final_predictions_cforest_teach_true$pred)
-cforest_F1_teach_false <-F1_Score(final_predictions_cforest_teach_false$obs, final_predictions_cforest_teach_false$pred)
-cforest_F1_african_american <-F1_Score(final_predictions_cforest_african_american$obs, final_predictions_cforest_african_american$pred)
-cforest_F1_asian <-F1_Score(final_predictions_cforest_asian$obs, final_predictions_cforest_asian$pred)
-cforest_F1_caucasian <-F1_Score(final_predictions_cforest_caucasian$obs, final_predictions_cforest_caucasian$pred)
-cforest_F1_hispanic <-F1_Score(final_predictions_cforest_hispanic$obs, final_predictions_cforest_hispanic$pred)
-cforest_F1_native_american <-F1_Score(final_predictions_cforest_native_american$obs, final_predictions_cforest_native_american$pred)
-cforest_F1_ethnicity_other <-F1_Score(final_predictions_cforest_ethnicity_other$obs, final_predictions_cforest_ethnicity_other$pred)
+best_F1_male <-F1_Score(final_predictions_best_male$obs, final_predictions_best_male$pred)
+best_F1_female <-F1_Score(final_predictions_best_female$obs, final_predictions_best_female$pred)
+# best_F1_adolescence <-F1_Score(final_predictions_best_adolescence$obs, final_predictions_best_adolescence$pred)
+# best_F1_youth <-F1_Score(final_predictions_best_youth$obs, final_predictions_best_youth$pred)
+# best_F1_adulthood<-F1_Score(final_predictions_best_adulthood$obs, final_predictions_best_adulthood$pred)
+best_F1_old_age <-F1_Score(final_predictions_best_old_age$obs, final_predictions_best_old_age$pred)
+best_F1_teach_true <-F1_Score(final_predictions_best_teach_true$obs, final_predictions_best_teach_true$pred)
+best_F1_teach_false <-F1_Score(final_predictions_best_teach_false$obs, final_predictions_best_teach_false$pred)
+best_F1_african_american <-F1_Score(final_predictions_best_african_american$obs, final_predictions_best_african_american$pred)
+best_F1_asian <-F1_Score(final_predictions_best_asian$obs, final_predictions_best_asian$pred)
+best_F1_caucasian <-F1_Score(final_predictions_best_caucasian$obs, final_predictions_best_caucasian$pred)
+best_F1_hispanic <-F1_Score(final_predictions_best_hispanic$obs, final_predictions_best_hispanic$pred)
+# best_F1_native_american <-F1_Score(final_predictions_best_native_american$obs, final_predictions_best_native_american$pred)
+best_F1_ethnicity_other <-F1_Score(final_predictions_best_ethnicity_other$obs, final_predictions_best_ethnicity_other$pred)
 
 #-------------------------------------------------------------------------------
 
 # CREATE THE TABLE
 
-# Models
-Groups <- c("Male", "Female", "Adolescence", "Youth", "Adulthood", "Old Age", "Teach True", "Teach False", "African American", "Asian", "Caucasian", "Hispanic", "Native American", "Ethnicity Other")
+# Models (GENERAL)
+# Groups <- c("Male", "Female", "Adolescence", "Youth", "Adulthood", "Old Age", "Teach True", "Teach False", "African American", "Asian", "Caucasian", "Hispanic", "Native American", "Ethnicity Other")
 
-# Precision
-Precision <- round(c(m1_Precision, m2_Precision, m4_Precision, m5_Precision, m6_Precision, m7_Precision, m8_Precision, m9_Precision, m10_Precision, m11_Precision, m12_Precision, m13_Precision, m14_Precision, m15_Precision),3)
+# Models (gbm)
+Groups <- c("Male", "Female", "Old Age", "Teach True", "Teach False", "African American", "Asian", "Caucasian", "Hispanic", "Ethnicity Other")
 
-# Recall
-Recall <- round(c(m1_recall, m2_recall, m4_recall, m5_recall, m6_recall, m7_recall, m8_recall, m9_recall, m10_recall, m11_recall, m12_recall, m13_recall, m14_recall, m15_recall),3)
+# Precision (GENERAL)
+#Precision <- round(c(m1_Precision, m2_Precision, m4_Precision, m5_Precision, m6_Precision, m7_Precision, m8_Precision, m9_Precision, m10_Precision, m11_Precision, m12_Precision, m13_Precision, m14_Precision, m15_Precision),3)
 
-# F1 parameter
-F1 <- round(c(cforest_F1_male, cforest_F1_female, cforest_F1_adolescence, cforest_F1_youth, cforest_F1_adulthood, cforest_F1_old_age, cforest_F1_teach_true, cforest_F1_teach_false, cforest_F1_african_american, cforest_F1_asian, cforest_F1_caucasian, cforest_F1_hispanic, cforest_F1_native_american, cforest_F1_ethnicity_other),3)
+# Precision (gbm)
+Precision <- round(c(m1_Precision, m2_Precision, m7_Precision, m8_Precision, m9_Precision, m10_Precision, m11_Precision, m12_Precision, m13_Precision, m15_Precision),3)
 
+# Recall (GENERAL)
+# Recall <- round(c(m1_recall, m2_recall, m4_recall, m5_recall, m6_recall, m7_recall, m8_recall, m9_recall, m10_recall, m11_recall, m12_recall, m13_recall, m14_recall, m15_recall),3)
 
-# Dataframe
+# Recall (gbm)
+Recall <- round(c(m1_recall, m2_recall, m7_recall, m8_recall, m9_recall, m10_recall, m11_recall, m12_recall, m13_recall, m15_recall),3)
+
+# F1 parameter (GENERAL)
+# F1 <- round(c(best_F1_male, best_F1_female, best_F1_adolescence, best_F1_youth, best_F1_adulthood, best_F1_old_age, best_F1_teach_true, best_F1_teach_false, best_F1_african_american, best_F1_asian, best_F1_caucasian, best_F1_hispanic, best_F1_native_american, best_F1_ethnicity_other),3)
+
+# F1 parameter (gbm)
+F1 <- round(c(best_F1_male, best_F1_female, best_F1_old_age, best_F1_teach_true, best_F1_teach_false, best_F1_african_american, best_F1_asian, best_F1_caucasian, best_F1_hispanic, best_F1_ethnicity_other),3)
+
+# Dataframe (GENERAL)
 comparative_option_B <- data.frame(Groups = Groups, Precision = Precision, Recall = Recall, F1 = F1)
 
 print(comparative_option_B)
@@ -3197,43 +3218,101 @@ print(comparative_option_B)
  
 # CREATE FINAL DATASETS WITH PERFORMANCE VALUES (by categories)
 
-data_plot <- data.frame(class = c("Global score",
+#data_plot <- data.frame(class = c("Global score",                               # General
+#                     "Men",
+#                     "Women",
+#                     "Global score",
+#                     "Adolescents",
+#                     "Youth",
+#                     "Adults",
+#                     "Older adults",
+#                     "Global score",
+#                     "African American", 
+#                     "Asian",
+#                     "Caucasian",
+#                     "Hispanic",
+#                     "Native American",
+#                     "Other/Unknown",
+#                     "Global score",
+#                     "Teaching\nstatus",
+#                     "Not teaching\nstatus"),
+#           category = c(rep("Gender", 3),
+#                        rep("Age", 5), 
+#                        rep("Ethnicity", 7),
+#                        rep("Teaching status", 3)),
+#           value = c(F1_global, best_F1_male, best_F1_female,
+#                     F1_global,
+#                     best_F1_adolescence, best_F1_youth, best_F1_adulthood,
+#                     best_F1_old_age, 
+#                     F1_global, best_F1_african_american, best_F1_asian,
+#                     best_F1_caucasian, best_F1_hispanic,
+#                     best_F1_native_american, best_F1_ethnicity_other,
+#                     F1_global, best_F1_teach_true, best_F1_teach_false),
+#           col = c(c(0, 1, 1, 
+#                     0, 1, 1, 1, 1,
+#                     0, 1, 1, 1, 1, 1, 1,
+#                     0, 1, 1)))
+
+
+data_plot <- data.frame(class = c("Global score",                                # gbm
                      "Men",
                      "Women",
                      "Global score",
-                     "Adolescents",
-                     "Youth",
-                     "Adults",
                      "Older adults",
                      "Global score",
                      "African American", 
                      "Asian",
                      "Caucasian",
                      "Hispanic",
-                     "Native American",
                      "Other/Unknown",
                      "Global score",
                      "Teaching\nstatus",
                      "Not teaching\nstatus"),
            category = c(rep("Gender", 3),
-                        rep("Age", 5), 
-                        rep("Ethnicity", 7),
+                        rep("Age", 2), 
+                        rep("Ethnicity", 6),
                         rep("Teaching status", 3)),
-           value = c(F1_global, cforest_F1_male, cforest_F1_female,
+           value = c(F1_global, best_F1_male, best_F1_female,
                      F1_global,
-                     cforest_F1_adolescence, cforest_F1_youth, cforest_F1_adulthood,
-                     cforest_F1_old_age, 
-                     F1_global, cforest_F1_african_american, cforest_F1_asian,
-                     cforest_F1_caucasian, cforest_F1_hispanic,
-                     cforest_F1_native_american, cforest_F1_ethnicity_other,
-                     F1_global, cforest_F1_teach_true, cforest_F1_teach_false),
+                     best_F1_old_age, 
+                     F1_global, best_F1_african_american, best_F1_asian,
+                     best_F1_caucasian, best_F1_hispanic,
+                     best_F1_ethnicity_other,
+                     F1_global, best_F1_teach_true, best_F1_teach_false),
            col = c(c(0, 1, 1, 
-                     0, 1, 1, 1, 1,
-                     0, 1, 1, 1, 1, 1, 1,
+                     0, 1,
+                     0, 1, 1, 1, 1, 1,
                      0, 1, 1)))
 
+#---
 
-# Plot by race
+# Plot by race                                                                   # General
+
+#plot_race <- data_plot %>%
+#  filter(category == "Ethnicity") %>%
+#  mutate(class = reorder(class, value)) %>%
+#  mutate(col = factor(col),
+#         class = factor(class, 
+#                        levels = c("Asian",
+#                                   "Native American",
+#                                   "Other/Unknown",
+#                                   "Caucasian",
+#                                   "African American",
+#                                   "Hispanic",
+#                                   "Global score"))) %>%
+#  ggplot(aes(x = value, y = class, fill = col)) +
+#  geom_col() +
+#  geom_vline(xintercept = F1_global, linetype = 2) +
+#  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+#  labs(title = "Ethnicity",
+#       x = "",
+#       y = "") +
+#  theme_bw() +
+#  theme(legend.position = "none") +
+#  scale_fill_nejm()
+
+
+# Plot by race                                                                   # gbm
 
 plot_race <- data_plot %>%
   filter(category == "Ethnicity") %>%
@@ -3241,7 +3320,6 @@ plot_race <- data_plot %>%
   mutate(col = factor(col),
          class = factor(class, 
                         levels = c("Asian",
-                                   "Native American",
                                    "Other/Unknown",
                                    "Caucasian",
                                    "African American",
@@ -3259,7 +3337,33 @@ plot_race <- data_plot %>%
   scale_fill_nejm()
 
 
-# Plot by age group
+#---
+
+# Plot by age group                                                              # General                                               
+
+#plot_age <- data_plot %>%
+#  filter(category == "Age") %>%
+#  mutate(class = reorder(class, value)) %>%
+#  mutate(col = factor(col),
+#         class = factor(class, 
+#                        levels = c("Older adults",
+#                                   "Adults",
+#                                   "Youth",
+#                                   "Adolescents",
+#                                   "Global score"))) %>%
+#  ggplot(aes(x = value, y = class, fill = col)) +
+#  geom_col() +
+#  geom_vline(xintercept = F1_global, linetype = 2) +
+#  geom_text(aes(label = format(round(value, 2), nsmall = 2)), color = "white", hjust = 2) +
+#  labs(title = "Age",
+#       x = "",
+#       y = "") +
+#  theme_bw() +
+#  theme(legend.position = "none") +
+#  scale_fill_nejm()
+
+
+# Plot by age group                                                              # gbm                                                
 
 plot_age <- data_plot %>%
   filter(category == "Age") %>%
@@ -3267,9 +3371,6 @@ plot_age <- data_plot %>%
   mutate(col = factor(col),
          class = factor(class, 
                         levels = c("Older adults",
-                                   "Adults",
-                                   "Youth",
-                                   "Adolescents",
                                    "Global score"))) %>%
   ggplot(aes(x = value, y = class, fill = col)) +
   geom_col() +
@@ -3282,6 +3383,7 @@ plot_age <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
+#---
 
 # Plot by gender
 
@@ -3304,6 +3406,7 @@ plot_gender <- data_plot %>%
   theme(legend.position = "none") +
   scale_fill_nejm()
 
+#---
 
 # Plot by teaching status
 
@@ -3365,15 +3468,15 @@ predictions <- matrix(nrow = nrow(data_test), ncol = k)
 for (i in 1:k) {
   sample_indices <- sample(nrow(data_train), replace = TRUE)
   bootstrap_sample <- data_train[sample_indices, ]
-  fit_cforest_new <- train(outcome_and_exposure,                  
+  fit_best_new <- train(outcome_and_exposure,                  
                 data = bootstrap_sample,
-                method = "Rborist",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
                 metric = "F1")
   # Predicting probability of class 1
-  predictions[, i] <- getFinalPredictions(fit_cforest_new, data_test)$Expired
+  predictions[, i] <- getFinalPredictions(fit_best_new, data_test)$Expired
 }
 
 
@@ -3459,98 +3562,5 @@ data_test %>%
   scale_color_lancet() +
   guides(col = guide_legend(override.aes = list(alpha = 1)))
 
-#---
-
-# Predictions for hours spent from admission to ICU admission by apache_other
-data_test %>%
-  dplyr::mutate(pred = data_plot$y,
-         pred.lower = data_plot$ymin,
-         pred.upper = data_plot$ymax) %>%
-  dplyr::group_by(prev_dept_los_hrs, apache_other) %>%
-  dplyr::summarise(pred.mean = mean(pred),
-            pred.low = mean(pred.lower),
-            pred.up = mean(pred.upper)) %>%
-  ungroup() %>%
-  dplyr::mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
-  dplyr::filter(prev_dept_los_hrs <= 100) %>%
-  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
-  dplyr::group_by(prev_rounded, apache_other) %>%
-  dplyr::summarise(pred.mean = mean(pred.mean),
-            pred.low = mean(pred.low),
-            pred.up = mean(pred.up)) %>%
-  ungroup() %>%
-  dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
-         apache_other = factor(apache_other)) %>%
-  ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
-  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
-             data = data_test %>%
-               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
-                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
-               filter(prev_dept_los_hrs <= 100) %>%
-  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
-    dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
-         apache_other = factor(apache_other))) +
-  geom_line() +
-  geom_lineribbon(aes(ymin = pred.low,
-                      ymax = pred.up)) +
-  facet_wrap(~ apache_other) +
-  labs(x = "Hours from hospital admission to ICU admission",
-       y = "Predicted probability of death",
-       col = "Mortality") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = seq(0, 100, 5)) + 
-  ggsci::scale_color_lancet() +
-  guides(col = guide_legend(override.aes = list(alpha = 1)))
-
-
-data_test %>%
-  dplyr::mutate(pred = data_plot$y,
-         pred.lower = data_plot$ymin,
-         pred.upper = data_plot$ymax) %>%
-  dplyr::group_by(prev_dept_los_hrs, apache_other, hist_diabetes_bin) %>%
-  dplyr::summarise(pred.mean = mean(pred),
-            pred.low = mean(pred.lower),
-            pred.up = mean(pred.upper)) %>%
-  ungroup() %>%
-  dplyr::mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
-  dplyr::filter(prev_dept_los_hrs <= 100) %>%
-  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
-  dplyr::group_by(prev_rounded, apache_other, hist_diabetes_bin) %>%
-  dplyr::summarise(pred.mean = mean(pred.mean),
-            pred.low = mean(pred.low),
-            pred.up = mean(pred.up)) %>%
-  ungroup() %>%
-  dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
-         apache_other = factor(apache_other),
-         hist_diabetes_bin = ifelse(hist_diabetes_bin == "1", "No Diabetes", "Diabetes"),
-         hist_diabetes_bin = factor(hist_diabetes_bin,
-                                    levels = c("Diabetes",
-                                               "No Diabetes"))) %>%
-  ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
-  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
-             data = data_test %>%
-               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
-                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
-               filter(prev_dept_los_hrs <= 100) %>%
-  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
-    dplyr::mutate(apache_other = ifelse(apache_other == "1", "Apache_other = No", "Apache_other = Yes"),
-         apache_other = factor(apache_other),
-         hist_diabetes_bin = ifelse(hist_diabetes_bin == "1", "No Diabetes", "Diabetes"),
-         hist_diabetes_bin = factor(hist_diabetes_bin,
-                                    levels = c("Diabetes",
-                                               "No Diabetes")))) +
-  geom_line() +
-  geom_lineribbon(aes(ymin = pred.low,
-                      ymax = pred.up)) +
-  facet_grid(apache_other ~ hist_diabetes_bin) +
-  labs(x = "Hours from hospital admission to ICU admission",
-       y = "Predicted probability of death",
-       col = "Mortality") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = seq(0, 100, 5)) + 
-  ggsci::scale_color_lancet() +
-  guides(col = guide_legend(override.aes = list(alpha = 1)))
 ```
 
