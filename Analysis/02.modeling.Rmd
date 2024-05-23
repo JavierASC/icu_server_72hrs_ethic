@@ -371,8 +371,8 @@ set.seed(123)
 
 h_start_gbm <- Sys.time()                          
 
-fit_gbm <- train(outcome_and_exposure,                 # 15 min   F1: 0.90030 
-                 data = data_train_without_ID,
+fit_gbm <- train(outcome_and_exposure,                 # 15 min
+                 data = data_train_without_ID %>% as.data.frame(),
                  method = "gbm",               
                  trControl = fitControl,        
                  verbose = F,                   
@@ -381,8 +381,8 @@ fit_gbm <- train(outcome_and_exposure,                 # 15 min   F1: 0.90030
 
 h_start_rf <- Sys.time()                           
 
-fit_rf <- train(outcome_and_exposure,                  # 1 min   F1: 0.92642
-                data = data_train_without_ID,
+fit_rf <- train(outcome_and_exposure,                  # 1 min
+                data = data_train_without_ID %>% as.data.frame(),
                 method = "rf",
                 trControl = fitControl,
                 verbose = F,
@@ -391,8 +391,8 @@ fit_rf <- train(outcome_and_exposure,                  # 1 min   F1: 0.92642
 
 h_start_ada <- Sys.time()                           
 
-fit_ada <- train(outcome_and_exposure,                 # 20 min   F1: 0.91687
-                data = data_train_without_ID,
+fit_ada <- train(outcome_and_exposure,                 # 20 min  
+                data = data_train_without_ID %>% as.data.frame(),
                 method = "ada",
                 trControl = fitControl,
                 verbose = F,
@@ -401,8 +401,8 @@ fit_ada <- train(outcome_and_exposure,                 # 20 min   F1: 0.91687
 
 h_start_xgb <- Sys.time()                          
 
-fit_xgb <- train(outcome_and_exposure,                 # 2 min    F1: 0.93523 
-                 data = data_train_without_ID,
+fit_xgb <- train(outcome_and_exposure,                 # 2 min  
+                 data = data_train_without_ID %>% as.data.frame(),
                  method = "xgbTree",
                  trControl = fitControl,
                  verbose = F,
@@ -411,7 +411,7 @@ fit_xgb <- train(outcome_and_exposure,                 # 2 min    F1: 0.93523
 
 h_start_lr <- Sys.time()                          
 
-fit_lr <- train(outcome_and_exposure,                 # 30 seconds   F1: 0.9498 
+fit_lr <- train(outcome_and_exposure,                 # 30 seconds  
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "LogitBoost",
                 trControl = fitControl,
@@ -421,8 +421,8 @@ fit_lr <- train(outcome_and_exposure,                 # 30 seconds   F1: 0.9498
 
 h_start_lda <- Sys.time()                                         
 
-fit_lda <- train(outcome_and_exposure,                # 5 seconds   F1: 0.94972 
-                data = data_train_without_ID,          
+fit_lda <- train(outcome_and_exposure,                # 5 seconds 
+                data = data_train_without_ID %>% as.data.frame(),          
                 method = "lda",
                 trControl = fitControl,
                 verbose = F,
@@ -431,8 +431,8 @@ fit_lda <- train(outcome_and_exposure,                # 5 seconds   F1: 0.94972
 
 h_start_kernelpls <- Sys.time()                  
 
-fit_kernelpls <- train(outcome_and_exposure,          # 7 seconds  F1: 0.9778 
-                data = data_train_without_ID,
+fit_kernelpls <- train(outcome_and_exposure,          # 7 seconds 
+                data = data_train_without_ID %>% as.data.frame(),
                 method = "kernelpls",
                 trControl = fitControl,
                 verbose = F,
@@ -441,8 +441,8 @@ fit_kernelpls <- train(outcome_and_exposure,          # 7 seconds  F1: 0.9778
 
 h_start_ranger <- Sys.time() 
 
-fit_ranger <- train(outcome_and_exposure,             # 1 min   F1: 0.93905 
-                data = data_train_without_ID,
+fit_ranger <- train(outcome_and_exposure,             # 1 min  
+                data = data_train_without_ID %>% as.data.frame(),
                 method = "ranger",
                 trControl = fitControl,
                 verbose = F,
@@ -451,8 +451,8 @@ fit_ranger <- train(outcome_and_exposure,             # 1 min   F1: 0.93905
 
 h_start_Linda <- Sys.time() 
 
-fit_Linda <- train(outcome_and_exposure,              # 8 seconds  F1: 0.93416 
-                data = data_train_without_ID,      
+fit_Linda <- train(outcome_and_exposure,              # 8 seconds 
+                data = data_train_without_ID %>% as.data.frame(),      
                 method = "Linda",
                 trControl = fitControl,
                 verbose = F,
@@ -463,8 +463,8 @@ fit_Linda <- train(outcome_and_exposure,              # 8 seconds  F1: 0.93416
 
 h_start_cforest <- Sys.time() 
 
-fit_cforest <- train(outcome_and_exposure,             # 10min   F1: 0.99218
-                data = data_train_without_ID,    
+fit_cforest <- train(outcome_and_exposure,             # 10min  
+                data = data_train_without_ID %>% as.data.frame(),    
                 method = "Rborist",
                 trControl = fitControl,
                 verbose = F,
@@ -861,9 +861,9 @@ set.seed(123)
 
 h_start_selected <- Sys.time() 
 
-fit_cforest <- train(outcome_and_exposure,
-                data = data_train_without_ID,    
-                method = "gbm",
+fit_lda <- train(outcome_and_exposure, 
+                data = data_train_without_ID %>% as.data.frame(),          
+                method = "lda",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -877,13 +877,13 @@ h_end_selected <- Sys.time()
 
 # You can save the model so you don't have to run it again.
 
-saveRDS(fit_gbm, file = "gbm_model.Rda")
+saveRDS(fit_gbm, file = "lda_model.Rda")
 
 # UPLOAD THE MODEL
 
 # If you have run model training previously you can load the saved model to save time.
 
-fit_best <- readRDS("gbm_model.Rda")
+fit_best <- readRDS("lda_model.Rda")
 
 #---
 
@@ -1034,7 +1034,7 @@ gbm_F1 <-F1_Score(final_predictions$obs, final_predictions$pred)
 
 # PRINT
 
-str_glue("gbm model F1 is {round(cforest_F1, digits = 3)}")
+str_glue("best model F1 is {round(cforest_F1, digits = 3)}")
 
 ```
 
