@@ -97,7 +97,7 @@ In this section, the data, or dataframe, already analyzed and cleaned in the pre
 
 # file.choose()     # Shows the location of the file.
 
-final_df_selected <- read_csv("C:\\Users\\jquintero24E\\Desktop\\Icu_mortality-models\\Icu_mortality-models\\Analysis\\dataframe_2024_05_14.csv")
+final_df_selected <- read_csv("C:\\Users\\jquintero24E\\Desktop\\Icu_mortality-models\\Icu_mortality-models\\Analysis\\dataframe_2024_05_24.csv")
 
 # Delete first column (count)
 
@@ -205,7 +205,9 @@ final_df_selected$ethnicity <- as.factor(final_df_selected$ethnicity)
 ```
 
 
-# REDUCTION OF VARIABLES
+# REDUCTION OF VARIABLES AND SELECTION OF PATIENTS BASED ON LENGHT OF STAY IN UCI
+
+## MODEL 0 (24-72h)
 
 ```{r}
 
@@ -232,7 +234,21 @@ final_df_selected$ethnicity <- as.factor(final_df_selected$ethnicity)
 ## Added: region, numbedscategory, teachingstatus (it reduces success)
 
 final_df_selected <- final_df_selected %>%
-  select(patientunitstayid, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, sodium_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, nibp_systolic_clear, nibp_mean_clear, temperature_clear, glucose_clear, potassium_clear, hemoglobin_clear, calcium_clear, norepinephrine, phenylephrine, heparin, warfarin, heartrate_clear, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, teachingstatus)
+  select(patientunitstayid, LOS, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, sodium_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, nibp_systolic_clear, nibp_mean_clear, temperature_clear, glucose_clear, potassium_clear, hemoglobin_clear, calcium_clear, norepinephrine, phenylephrine, heparin, warfarin, heartrate_clear, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, teachingstatus)
+
+
+# SELECTION OF PATIENTS BASED ON LENGHT OF STAY IN UCI (24-72h = 1-3 days)
+
+# LOS values are in day (units)
+
+final_df_selected <- final_df_selected %>%
+  filter(LOS >= 1) %>%
+  filter(LOS <= 3)
+
+# Delete "LOS" column.
+
+final_df_selected <- final_df_selected %>%
+  select(-LOS)
 
 # stview(dfSummary(final_df_selected))
 
@@ -277,8 +293,8 @@ data_test  = final_df_selected[-idx_train, ]
 
 # 3. SAVE DIVISION TO CSV
 
-#  write.csv(data_test, "data_test_factor_2024_02_29.csv")
-#  write.csv(data_train, "data_train_factor_2024_02_29.csv")
+#  write.csv(data_test, "data_test.csv")
+#  write.csv(data_train, "data_train.csv")
 
 ```
 
@@ -371,7 +387,7 @@ set.seed(123)
 
 h_start_gbm <- Sys.time()                          
 
-fit_gbm <- train(outcome_and_exposure,                 # 15 min
+fit_gbm <- train(outcome_and_exposure,                                  # 16 min
                  data = data_train_without_ID %>% as.data.frame(),
                  method = "gbm",               
                  trControl = fitControl,        
@@ -381,7 +397,7 @@ fit_gbm <- train(outcome_and_exposure,                 # 15 min
 
 h_start_rf <- Sys.time()                           
 
-fit_rf <- train(outcome_and_exposure,                  # 1 min
+fit_rf <- train(outcome_and_exposure,                                   # 3 min
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "rf",
                 trControl = fitControl,
@@ -391,7 +407,7 @@ fit_rf <- train(outcome_and_exposure,                  # 1 min
 
 h_start_ada <- Sys.time()                           
 
-fit_ada <- train(outcome_and_exposure,                 # 20 min  
+fit_ada <- train(outcome_and_exposure,                                  # 25 min  
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "ada",
                 trControl = fitControl,
@@ -401,7 +417,7 @@ fit_ada <- train(outcome_and_exposure,                 # 20 min
 
 h_start_xgb <- Sys.time()                          
 
-fit_xgb <- train(outcome_and_exposure,                 # 2 min  
+fit_xgb <- train(outcome_and_exposure,                                  # 2 min  
                  data = data_train_without_ID %>% as.data.frame(),
                  method = "xgbTree",
                  trControl = fitControl,
@@ -411,7 +427,7 @@ fit_xgb <- train(outcome_and_exposure,                 # 2 min
 
 h_start_lr <- Sys.time()                          
 
-fit_lr <- train(outcome_and_exposure,                 # 30 seconds  
+fit_lr <- train(outcome_and_exposure,                                   # 15 s  
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "LogitBoost",
                 trControl = fitControl,
@@ -421,7 +437,7 @@ fit_lr <- train(outcome_and_exposure,                 # 30 seconds
 
 h_start_lda <- Sys.time()                                         
 
-fit_lda <- train(outcome_and_exposure,                # 5 seconds 
+fit_lda <- train(outcome_and_exposure,                                  # 8 s 
                 data = data_train_without_ID %>% as.data.frame(),          
                 method = "lda",
                 trControl = fitControl,
@@ -431,7 +447,7 @@ fit_lda <- train(outcome_and_exposure,                # 5 seconds
 
 h_start_kernelpls <- Sys.time()                  
 
-fit_kernelpls <- train(outcome_and_exposure,          # 7 seconds 
+fit_kernelpls <- train(outcome_and_exposure,                            # 19 s
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "kernelpls",
                 trControl = fitControl,
@@ -441,7 +457,7 @@ fit_kernelpls <- train(outcome_and_exposure,          # 7 seconds
 
 h_start_ranger <- Sys.time() 
 
-fit_ranger <- train(outcome_and_exposure,             # 1 min  
+fit_ranger <- train(outcome_and_exposure,                               # 1 min  
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "ranger",
                 trControl = fitControl,
@@ -451,7 +467,7 @@ fit_ranger <- train(outcome_and_exposure,             # 1 min
 
 h_start_Linda <- Sys.time() 
 
-fit_Linda <- train(outcome_and_exposure,              # 8 seconds 
+fit_Linda <- train(outcome_and_exposure,                                # 7 s
                 data = data_train_without_ID %>% as.data.frame(),      
                 method = "Linda",
                 trControl = fitControl,
@@ -463,7 +479,7 @@ fit_Linda <- train(outcome_and_exposure,              # 8 seconds
 
 h_start_cforest <- Sys.time() 
 
-fit_cforest <- train(outcome_and_exposure,             # 10min  
+fit_cforest <- train(outcome_and_exposure,                              # 14 min  
                 data = data_train_without_ID %>% as.data.frame(),    
                 method = "Rborist",
                 trControl = fitControl,
@@ -551,7 +567,7 @@ str_glue("The best model is {best_performing_model_name}")
 
 # Select the model
 
-fit_best <- fit_xgb
+fit_best <- fit_ada
 
 #---------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------
@@ -850,7 +866,7 @@ print(comparative_table_ordered)
 
 # TRAINING ONLY THE SELECTED MODEL
 
-The selected model is lda.
+The selected model is ada.
 
 ```{r}
 
@@ -861,9 +877,9 @@ set.seed(123)
 
 h_start_selected <- Sys.time() 
 
-fit_lda <- train(outcome_and_exposure, 
+fit_ada <- train(outcome_and_exposure, 
                 data = data_train_without_ID %>% as.data.frame(),          
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -877,13 +893,13 @@ h_end_selected <- Sys.time()
 
 # You can save the model so you don't have to run it again.
 
-saveRDS(fit_gbm, file = "lda_model.Rda")
+saveRDS(fit_ada, file = "ada_model.Rda")
 
 # UPLOAD THE MODEL
 
 # If you have run model training previously you can load the saved model to save time.
 
-fit_best <- readRDS("lda_model.Rda")
+fit_best <- readRDS("ada_model.Rda")
 
 #---
 
@@ -1602,7 +1618,7 @@ outcome_and_exposure_male <- as.formula(paste(outcome_model_male, "~", paste(exp
 
 fit_best_male <- train(outcome_and_exposure_male,       
                 data = data_train_male_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -1712,7 +1728,7 @@ outcome_and_exposure_female <- as.formula(paste(outcome_model_female, "~", paste
 
 fit_best_female <- train(outcome_and_exposure_female,      
                 data = data_train_female_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -1824,7 +1840,7 @@ outcome_and_exposure_adolescence <- as.formula(paste(outcome_model_adolescence, 
 
 fit_best_adolescence <- train(outcome_and_exposure_adolescence,  
                 data = data_train_adolescence_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -1937,7 +1953,7 @@ outcome_and_exposure_youth <- as.formula(paste(outcome_model_youth, "~", paste(e
 
 fit_best_youth <- train(outcome_and_exposure_youth,
                 data = data_train_youth_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2050,7 +2066,7 @@ outcome_and_exposure_adulthood <- as.formula(paste(outcome_model_adulthood, "~",
 
 fit_best_adulthood <- train(outcome_and_exposure_adulthood,   
                 data = data_train_adulthood_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2162,7 +2178,7 @@ outcome_and_exposure_old_age <- as.formula(paste(outcome_model_old_age, "~", pas
 
 fit_best_old_age <- train(outcome_and_exposure_old_age,       
                 data = data_train_old_age_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2275,7 +2291,7 @@ outcome_and_exposure_teach_true <- as.formula(paste(outcome_model_teach_true, "~
 
 fit_best_teach_true <- train(outcome_and_exposure_teach_true,      
                 data = data_train_teach_true_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2388,7 +2404,7 @@ outcome_and_exposure_teach_false <- as.formula(paste(outcome_model_teach_false, 
 
 fit_best_teach_false <- train(outcome_and_exposure_teach_false,  
                 data = data_train_teach_false_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2501,7 +2517,7 @@ outcome_and_exposure_african_american <- as.formula(paste(outcome_model_african_
 
 fit_best_african_american <- train(outcome_and_exposure_african_american,    
                 data = data_train_african_american_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2614,7 +2630,7 @@ outcome_and_exposure_asian <- as.formula(paste(outcome_model_asian, "~", paste(e
 
 fit_best_asian <- train(outcome_and_exposure_asian,    
                 data = data_train_asian_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2727,7 +2743,7 @@ outcome_and_exposure_caucasian <- as.formula(paste(outcome_model_caucasian, "~",
 
 fit_best_caucasian <- train(outcome_and_exposure_caucasian,   
                 data = data_train_caucasian_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2840,7 +2856,7 @@ outcome_and_exposure_hispanic <- as.formula(paste(outcome_model_hispanic, "~", p
 
 fit_best_hispanic <- train(outcome_and_exposure_hispanic,       
                 data = data_train_hispanic_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2953,7 +2969,7 @@ outcome_and_exposure_native_american <- as.formula(paste(outcome_model_native_am
 
 fit_best_native_american <- train(outcome_and_exposure_native_american,     
                 data = data_train_native_american_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3066,7 +3082,7 @@ outcome_and_exposure_ethnicity_other <- as.formula(paste(outcome_model_ethnicity
 
 fit_best_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,   
                 data = data_train_ethnicity_other_without_ID %>% as.data.frame(),
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3380,7 +3396,7 @@ for (i in 1:k) {
   bootstrap_sample <- data_train[sample_indices, ]
   fit_best_new <- train(outcome_and_exposure,                  
                 data = bootstrap_sample,
-                method = "lda",
+                method = "ada",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
