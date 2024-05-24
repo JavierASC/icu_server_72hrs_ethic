@@ -702,6 +702,28 @@ print(sum(is.na(dataframe_for_modeling$final_charlson_score)))
 
 
 
+## 5.7  Lenght of stay (LOS)
+
+```{r}
+
+# Lenght of stay (LOS)
+
+# This is the time a patient stays in the ICU.
+
+# 1. CHANGE COLUMN NAME
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  rename("LOS" = actualiculos)
+
+# 2. REMOVE NA
+
+dataframe_for_modeling <- dataframe_for_modeling %>% 
+  filter(!is.na(LOS))
+
+```
+
+
+
 # 6. DATAFRAME MODIFICATIONS
 
 ## 6.1 Correct values ">89"
@@ -772,7 +794,7 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 dataframe_for_modeling <- dataframe_for_modeling %>%
   mutate(apachescoreIV = ifelse(is.na(apachescoreIV), median(apachescoreIV, na.rm = TRUE), apachescoreIV))
 
-# Change minutes to hours for variable prev_dept_los
+# Change minutes to hours for variable prev_dept_los (time spent in hospital before entering the ICU)
 
 dataframe_for_modeling <- dataframe_for_modeling %>%
   mutate(prev_dept_los_hrs = abs(prev_dept_los/60)) %>%
@@ -966,7 +988,7 @@ grViz(flowchart_code)
 # SELECT: CLEAR VARIABLES, TOP 5 HIST WITH ITS OTHER, TOP 4 VASOPRESSORS WITH ITS OTHER, MODIFIED APACHESCORE COLUMN.
 
 dataframe_for_modeling <- dataframe_for_modeling %>%
-  select(patientunitstayid, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, nibp_systolic_clear, sodium_clear, spo2_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, heartrate_clear, nibp_mean_clear, temperature_clear, glucose_clear, hemoglobin_clear, potassium_clear, calcium_clear, wbc_clear, creatinine_clear, norepinephrine, phenylephrine, heparin, warfarin, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, hist_other_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, apache_other, numbedscategory, teachingstatus, region)
+  select(patientunitstayid, LOS, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, nibp_systolic_clear, sodium_clear, spo2_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, heartrate_clear, nibp_mean_clear, temperature_clear, glucose_clear, hemoglobin_clear, potassium_clear, calcium_clear, wbc_clear, creatinine_clear, norepinephrine, phenylephrine, heparin, warfarin, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, hist_other_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, apache_other, numbedscategory, teachingstatus, region)
 
 
 # Check the NAs in the entire dataframe.
@@ -983,7 +1005,7 @@ View(NA_by_column)
 
 # Save the dataframe in excel.
 
- write.csv(dataframe_for_modeling, "dataframe_2024_05_14.csv")
+ write.csv(dataframe_for_modeling, "dataframe_2024_05_24.csv")
 
 ```
 
