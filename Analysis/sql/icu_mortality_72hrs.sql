@@ -6,10 +6,10 @@
 -- We decide:  0 = ALIVE and 1 = EXPIRED
 
 SELECT
-  patientunitstayid,
+  patientunitstayid, actualiculos,
   MAX(CASE WHEN actualICULOS BETWEEN 1 AND 3 AND actualICUMortality = 'EXPIRED' THEN 1
     ELSE 0 END) AS icu_mortality_72hrs
 FROM
   `physionet-data.eicu_crd.apachepatientresult`
 GROUP BY
-  patientunitstayid
+  patientunitstayid, actualiculos
