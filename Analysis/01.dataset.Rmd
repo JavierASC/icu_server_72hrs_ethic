@@ -478,8 +478,6 @@ top4_vasopressors <- dataframe_for_modeling %>%
 
 print(top4_vasopressors)
 
-a <- dataframe_for_modeling %>%
-  select(norepinephrine)
 
 # 2. CREATE "VASOPRESSORS_OTHER" COLUMN THAT ADDS ALL THE HIST COLUMNS (EXCEPT THOSE IN THE TOP 4)
 
@@ -720,6 +718,8 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 dataframe_for_modeling <- dataframe_for_modeling %>% 
   filter(!is.na(LOS))
 
+b <- as.numeric(nrow(dataframe_for_modeling))
+
 ```
 
 
@@ -761,7 +761,7 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 
 
 # Patients after Exclusion Criteria 1
-b <- as.numeric(nrow(dataframe_for_modeling))
+c <- as.numeric(nrow(dataframe_for_modeling))
 
 ```
 
@@ -776,7 +776,7 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
   filter(!is.na(sex))
 
 # Patients after Exclusion Criteria 2
-c <- as.numeric(nrow(dataframe_for_modeling))
+d <- as.numeric(nrow(dataframe_for_modeling))
 
 
 # Remove NA from the variable icu_mortality_72hrs
@@ -966,13 +966,15 @@ digraph flowchart {
   graph [fontname = 'Arial', fontsize = 20, fontcolor = 'black', color = 'transparent'];
   node [shape = box, fontname = 'Arial', fontsize = 12, color = 'black'];
   ab [label = 'Initial number of patients: %d'];
-  b [label = 'Patients >=16: %d'];
-  c [label = 'Elimination of NA in the sex variable: %d'];
+  b [label = 'Removal of NA in Lenght of stay: %d'];  
+  c [label = 'Filter patients >=16: %d'];
+  d [label = 'Removal of NA in the sex variable: %d'];
 
   ab -> b;
   b -> c;
+  c -> d;
 }
-", title, ab, b, c)
+", title, ab, b, c, d)
 
 
 # Flowchart
