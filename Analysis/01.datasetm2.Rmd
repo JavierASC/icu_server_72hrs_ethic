@@ -10,7 +10,7 @@ date: '`r format(Sys.Date(), "%B %d, %Y")`'
 #     toc: yes
 #     toc_float: yes
 ---
-# Model 2 (-24 to 24h)
+# Model 2 (-24 to 24h).
 
 # 0. PACKAGE LOADING (install if necessary)
 
