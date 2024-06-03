@@ -193,7 +193,7 @@ final_df_selected$sex <- as.factor(final_df_selected$sex)
 
 final_df_selected$heparin <- as.factor(final_df_selected$heparin)
 final_df_selected$norepinephrine <- as.factor(final_df_selected$norepinephrine)
-final_df_selected$warfarin <- as.factor(final_df_selected$epinephrine)
+final_df_selected$warfarin <- as.factor(final_df_selected$warfarin)
 final_df_selected$phenylephrine <- as.factor(final_df_selected$phenylephrine)
 final_df_selected$vasopressors_other_bin <- as.factor(final_df_selected$vasopressors_other_bin)
 
@@ -396,7 +396,7 @@ fit_gbm <- train(outcome_and_exposure,                                  # 16 min
 
 h_start_rf <- Sys.time()                           
 
-fit_rf <- train(outcome_and_exposure,                                   # 3 min
+fit_rf <- train(outcome_and_exposure,                                   # 6 min
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "rf",
                 trControl = fitControl,
@@ -406,7 +406,7 @@ fit_rf <- train(outcome_and_exposure,                                   # 3 min
 
 h_start_ada <- Sys.time()                           
 
-fit_ada <- train(outcome_and_exposure,                                  # 25 min  
+fit_ada <- train(outcome_and_exposure,                                  # 11 min  
                 data = data_train_without_ID %>% as.data.frame(),
                 method = "ada",
                 trControl = fitControl,
@@ -506,7 +506,7 @@ saveRDS(fit_gbm, file = "gbm_model.Rda")
 saveRDS(fit_rf, file = "rf_model.Rda")
 saveRDS(fit_ada, file = "ada_model.Rda")
 saveRDS(fit_xgb, file = "xgb_model.Rda")
-saveRDS(fit_lr, file = "lr_model.Rda") # Runs later again
+saveRDS(fit_lr, file = "lr_model.Rda")
 saveRDS(fit_lda, file = "lda_model.Rda")
 saveRDS(fit_kernelpls, file = "kernelpls_model.Rda")
 saveRDS(fit_ranger, file = "ranger_model.Rda")
@@ -566,7 +566,7 @@ str_glue("The best model, only based on Balanced Accuracy, is {best_performing_m
 
 # Select the model
 
-fit_best <- fit_ada
+fit_best <- fit_xgb
 
 #---------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------
@@ -877,12 +877,14 @@ comparative_table_ordered <- comparative_table[order(comparative_table$Balanced_
 print(comparative_table_ordered)
 
 ```
-The model ada has the best balanced accuracy, but there are other effective models.All models have a high performance F1, so to evaluate other models the confusion matrix and Specificity can be considered. Models gbm and xgb are considered to be effective models.
+The model gbm has the best balanced accuracy, but there are other effective models.All models have a high performance F1, so to evaluate other models the confusion matrix and Specificity can be considered. Models rf and xgb are considered to be effective models.
 
 
-# TRAINING ONLY THE SELECTED MODEL
+# TRAINING ONLY THE SELECTED MODELS
 
-The selected model is ada.
+The selected models are: gbm, rf and xgb.
+
+## Model 1 (gbm) training
 
 ```{r}
 
@@ -890,18 +892,13 @@ The selected model is ada.
 
 set.seed(123)
 
-
-h_start_selected <- Sys.time() 
-
-fit_ada <- train(outcome_and_exposure, 
-                data = data_train_without_ID %>% as.data.frame(),          
-                method = "ada",
-                trControl = fitControl,
-                verbose = F,
-                na.action = na.omit,
-                metric = "F1")
-
-h_end_selected <- Sys.time() 
+fit_gbm <- train(outcome_and_exposure,                              
+                 data = data_train_without_ID %>% as.data.frame(),
+                 method = "gbm",               
+                 trControl = fitControl,        
+                 verbose = F,                   
+                 na.action = na.omit,
+                 metric = "F1") 
 
 #---
 
@@ -909,21 +906,21 @@ h_end_selected <- Sys.time()
 
 # You can save the model so you don't have to run it again.
 
-saveRDS(fit_ada, file = "ada_model.Rda")
+saveRDS(fit_gbm, file = "gbm_model.Rda")
 
 # UPLOAD THE MODEL
 
 # If you have run model training previously you can load the saved model to save time.
 
-fit_best <- readRDS("ada_model.Rda")
+fit_best_1 <- readRDS("gbm_model.Rda")
 
 #---
 
 # CREATE THE getFinalPredictions FUNCTION.
 
-getFinalPredictions = function(fit_best, data_test, prob_threshold=0.4){     
+getFinalPredictions = function(fit_best_1, data_test, prob_threshold=0.4){     
                                                                                            
-  prediction_probabilities_tmp = predict(fit_best, newdata=data_test, type = "prob")        
+  prediction_probabilities_tmp = predict(fit_best_1, newdata=data_test, type = "prob")        
 
   rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
 
@@ -945,44 +942,213 @@ getFinalPredictions = function(fit_best, data_test, prob_threshold=0.4){
 
 # End of function
 
-final_predictions_best = getFinalPredictions(fit_best, data_test)
-final_predictions <- final_predictions_best
+final_predictions_best_1 = getFinalPredictions(fit_best_1, data_test)
 
 ```
 
 
-# CONFUSION MATRIX OF THE ALREADY CHOSEN MODEL
+## Model 2 (rf) training
 
 ```{r}
 
-#                     CONFUSION MATRIX
+# Training and predictions ONLY of the created model
+
+set.seed(123)
+
+fit_rf <- train(outcome_and_exposure,                               
+                data = data_train_without_ID %>% as.data.frame(),
+                method = "rf",
+                trControl = fitControl,
+                verbose = F,
+                na.action = na.omit,
+                metric = "F1")
+
+#---
+
+# SAVE THE MODEL
+
+# You can save the model so you don't have to run it again.
+
+saveRDS(fit_rf, file = "rf_model.Rda")
+
+# UPLOAD THE MODEL
+
+# If you have run model training previously you can load the saved model to save time.
+
+fit_best_2 <- readRDS("rf_model.Rda")
+
+#---
+
+# CREATE THE getFinalPredictions FUNCTION.
+
+getFinalPredictions = function(fit_best_2, data_test, prob_threshold=0.4){     
+                                                                                           
+  prediction_probabilities_tmp = predict(fit_best_2, newdata=data_test, type = "prob")        
+
+  rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
+
+  # Match the prediction with current data.
+  
+  final_predictions_tmp = tibble(ID         = data_test$patientunitstayid,                
+                                 trueStatus = data_test$icu_mortality_72hrs,               # Change target variable
+                                 obs        = if_else(trueStatus == "Expired",1,0))        # If Expired, enter 1.
+
+  final_predictions_tmp = cbind(final_predictions_tmp,                                    
+                                prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
+                                                                   rownames(prediction_probabilities_tmp)),])
+  
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))   # If "Alive" (alive probability) exceeds the threshold, enter 0
+  
+  final_predictions_tmp
+}
+
+# End of function
+
+final_predictions_best_2 = getFinalPredictions(fit_best_2, data_test)
+
+```
+
+
+## Model 3 (xgb) training
+
+```{r}
+
+# Training and predictions ONLY of the created model
+
+set.seed(123)
+
+fit_xgb <- train(outcome_and_exposure,                             
+                 data = data_train_without_ID %>% as.data.frame(),
+                 method = "xgbTree",
+                 trControl = fitControl,
+                 verbose = F,
+                 na.action = na.omit,
+                 metric = "F1")
+
+#---
+
+# SAVE THE MODEL
+
+# You can save the model so you don't have to run it again.
+
+saveRDS(fit_xgb, file = "xgb_model.Rda")
+
+# UPLOAD THE MODEL
+
+# If you have run model training previously you can load the saved model to save time.
+
+fit_best_3 <- readRDS("xgb_model.Rda")
+
+#---
+
+# CREATE THE getFinalPredictions FUNCTION.
+
+getFinalPredictions = function(fit_best_3, data_test, prob_threshold=0.4){     
+                                                                                           
+  prediction_probabilities_tmp = predict(fit_best_3, newdata=data_test, type = "prob")        
+
+  rownames(prediction_probabilities_tmp) = data_test$patientunitstayid          
+
+  # Match the prediction with current data.
+  
+  final_predictions_tmp = tibble(ID         = data_test$patientunitstayid,                
+                                 trueStatus = data_test$icu_mortality_72hrs,               # Change target variable
+                                 obs        = if_else(trueStatus == "Expired",1,0))        # If Expired, enter 1.
+
+  final_predictions_tmp = cbind(final_predictions_tmp,                                    
+                                prediction_probabilities_tmp[match(final_predictions_tmp$ID,    # Match using ID.
+                                                                   rownames(prediction_probabilities_tmp)),])
+  
+  final_predictions_tmp = final_predictions_tmp %>%
+    dplyr::mutate(pred=dplyr::if_else(Alive > prob_threshold, 0, 1))   # If "Alive" (alive probability) exceeds the threshold, enter 0
+  
+  final_predictions_tmp
+}
+
+# End of function
+
+final_predictions_best_3 = getFinalPredictions(fit_best_3, data_test)
+
+```
+
+
+# CONFUSION MATRIX OF THE ALREADY CHOSEN MODELS
+
+```{r}
+
+#                     CONFUSION MATRIX (selected model 1)
 
 # The dependent variable must be of type factor.
 
 # icu_mortality_72hrs
-final_predictions$obs <- as.factor(final_predictions$obs)
+final_predictions_best_1$obs <- as.factor(final_predictions_best_1$obs)
 
-levels(final_predictions$obs)
+levels(final_predictions_best_1$obs)
 
 # mortality_prediction_B
-final_predictions$pred <- as.factor(final_predictions$pred)
+final_predictions_best_1$pred <- as.factor(final_predictions_best_1$pred)
 
-levels(final_predictions$pred)
+levels(final_predictions_best_1$pred)
 
 # confusion matrix
 
-confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everything")
+confusionMatrix(final_predictions_best_1$pred, final_predictions_best_1$obs, mode = "everything")
+
+
+#-------------------------------------------------------------------------------
+
+#                     CONFUSION MATRIX (selected model 2)
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_best_2$obs <- as.factor(final_predictions_best_2$obs)
+
+levels(final_predictions_best_2$obs)
+
+# mortality_prediction_B
+final_predictions_best_2$pred <- as.factor(final_predictions_best_2$pred)
+
+levels(final_predictions_best_2$pred)
+
+# confusion matrix
+
+confusionMatrix(final_predictions_best_2$pred, final_predictions_best_2$obs, mode = "everything")
+
+
+#-------------------------------------------------------------------------------
+
+#                     CONFUSION MATRIX (selected model 3)
+
+# The dependent variable must be of type factor.
+
+# icu_mortality_72hrs
+final_predictions_best_3$obs <- as.factor(final_predictions_best_3$obs)
+
+levels(final_predictions_best_3$obs)
+
+# mortality_prediction_B
+final_predictions_best_3$pred <- as.factor(final_predictions_best_3$pred)
+
+levels(final_predictions_best_3$pred)
+
+# confusion matrix
+
+confusionMatrix(final_predictions_best_3$pred, final_predictions_best_3$obs, mode = "everything")
 
 ```
 
 # COMPARING MODEL PERFORMANCE APPLYING THRESHOLD-MOVING FOR IMBALANCE CLASSIFICATION
+
+## Selected model 1
 
 ```{r}
 
 # For imbalance classification tasks, it is recommended trying to move the probability threshold (by default 0.5) to achieve a better model performance
 
 # Applying a probability threshold of 0.4 (i.e., if the probability of living is 0.4 or more, the status of this patient is classified as "Alive")
-final_predictions_0.5 = getFinalPredictions(fit_best, data_test, prob_threshold = 0.5)
+final_predictions_0.5 = getFinalPredictions(fit_best_1, data_test, prob_threshold = 0.5)
 
 # transforming outcomes as factors
 
@@ -990,27 +1156,31 @@ final_predictions_0.5$obs <- as.factor(final_predictions_0.5$obs)
 
 levels(final_predictions_0.5$obs)
 
-final_predictions$obs <- as.factor(final_predictions$obs)
+final_predictions_0.5$obs <- as.factor(final_predictions_0.5$obs)
 
 # mortality_prediction_B
 final_predictions_0.5$pred <- factor(final_predictions_0.5$pred)
 
 levels(final_predictions_0.5$pred)
 
-final_predictions$pred <- factor(final_predictions$pred)
+final_predictions_best_1$pred <- factor(final_predictions_best_1$pred)
 
 # Comparing both Confusion Matrices
 ## matrix applying threshold of 0.40
-confusionMatrix(final_predictions$pred, final_predictions$obs, mode = "everything")
+confusionMatrix(final_predictions_best_1$pred, final_predictions_best_1$obs, mode = "everything")
 
 ## matrix applying by default threshold of 0.50
 confusionMatrix(final_predictions_0.5$pred, final_predictions_0.5$obs, mode = "everything")
 ```
 
+The same goes for the rest of the models.
+
 
 # PRECISION-RECALL CURVE
 
 ```{r}
+
+# (Selected model 1)
 
 # Function to calculate precision and recall for different classification thresholds.
 calculate_precision_recall <- function(predictions, true_labels) {
@@ -1033,41 +1203,43 @@ calculate_precision_recall <- function(predictions, true_labels) {
 
 # Calculate precision and recall for different thresholds
 
-precision_recall_df <- calculate_precision_recall(final_predictions$pred, final_predictions$obs)
+precision_recall_df1 <- calculate_precision_recall(final_predictions_best_1$pred, final_predictions_best_1$obs)
 
 
 # Precision versus recall graph
 
-ggplot(precision_recall_df, aes(x = recall, y = precision)) +
+ggplot(precision_recall_df1, aes(x = recall, y = precision)) +
   geom_line() +
   geom_point() +
   labs(x = "Recall", y = "Precision") +
-  ggtitle("Precision vs. Recall Curve")
-
-```
+  ggtitle("Precision vs. Recall Curve  MODEL 1 (gbm)")
 
 
+#-------------------------------------------------------------------------------
 
-# EVALUATION: PERCENTAGE OF CORRECT PREDICTION AND F1
+# (Selected model 2)
 
-```{r}
+precision_recall_df2 <- calculate_precision_recall(final_predictions_best_2$pred, final_predictions_best_2$obs)
 
-# 1º. PERCENTAGE (%) OF SUCCESSFUL
-
-success <- mean(final_predictions$obs == final_predictions$pred)*100
-
-str_glue("The percentage of correct answers is {round(success, digits = 3)} %")
-
-# CAUTION: in unbalanced data you can obtain a high percentage of success. With a model that does not predict well (many 1s and few 0s, predicts mostly 1s).
+ggplot(precision_recall_df2, aes(x = recall, y = precision)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Recall", y = "Precision") +
+  ggtitle("Precision vs. Recall Curve  MODEL 2 (rf)")
 
 
-# 2º. PARAMETER F1.
+#-------------------------------------------------------------------------------
 
-gbm_F1 <-F1_Score(final_predictions$obs, final_predictions$pred)
+# (Selected model 3)
 
-# PRINT
+precision_recall_df3 <- calculate_precision_recall(final_predictions_best_3$pred, final_predictions_best_3$obs)
 
-str_glue("best model F1 is {round(cforest_F1, digits = 3)}")
+ggplot(precision_recall_df3, aes(x = recall, y = precision)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Recall", y = "Precision") +
+  ggtitle("Precision vs. Recall Curve  MODEL 3 (xgb)")
+
 
 ```
 
@@ -1080,29 +1252,62 @@ A graphic representation is made of the importance of each variable in the model
 
 # Calculate the relative importance of the model variables.
 
-importance <- varImp(fit_best)
+importance1 <- varImp(fit_best_1)
+importance2 <- varImp(fit_best_2)
+importance3 <- varImp(fit_best_3)
 
 
 # ggplot
 
-ggplot(importance, aes(x = Overall, y = reorder(rownames(importance), Overall))) +
+ggplot(importance1, aes(x = Overall, y = reorder(rownames(importance), Overall))) +
   geom_bar(stat = "identity", width = 0.5, fill = "blue") +
-  labs(title = "IMPORTANCE OF THE MODEL VARIABLES",
+  labs(title = "IMPORTANCE OF THE MODEL 1 (gbm) VARIABLES",
        x = "Variables",
        y = "Relative importance (%)") +
   theme_minimal() +
   theme(axis.text.y = element_text(size = 7)) +
   coord_flip() 
 
+#---
+
+ggplot(importance2, aes(x = Overall, y = reorder(rownames(importance), Overall))) +
+  geom_bar(stat = "identity", width = 0.5, fill = "blue") +
+  labs(title = "IMPORTANCE OF THE MODEL 2 (rf) VARIABLES",
+       x = "Variables",
+       y = "Relative importance (%)") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 7)) +
+  coord_flip() 
+
+#---
+
+ggplot(importance3, aes(x = Overall, y = reorder(rownames(importance), Overall))) +
+  geom_bar(stat = "identity", width = 0.5, fill = "blue") +
+  labs(title = "IMPORTANCE OF THE MODEL 3 (xgb) VARIABLES",
+       x = "Variables",
+       y = "Relative importance (%)") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 7)) +
+  coord_flip() 
+
+
+# norepinefrina, respiratoryrate_vlear, vasopresors other, BUN
+
 ```
 
 # SUBGROUPS PREDICTIONS (FAIRNESS)
+
+This analysis will only be carried out for the model with the highest Balanced Accuracy.
+
 
 ## Option A: We use de trained model to predict by subgroups.
 
 ```{r}
 
 # Creation of the final_predictions data joining our data test
+
+final_predictions <- final_predictions_best_1
+
 
 final_predictions <- final_predictions %>%
   left_join(data_test %>% dplyr::rename(ID = patientunitstayid), by = "ID") %>%
@@ -1635,7 +1840,7 @@ outcome_and_exposure_male <- as.formula(paste(outcome_model_male, "~", paste(exp
 
 fit_best_male <- train(outcome_and_exposure_male,       
                 data = data_train_male_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -1745,7 +1950,7 @@ outcome_and_exposure_female <- as.formula(paste(outcome_model_female, "~", paste
 
 fit_best_female <- train(outcome_and_exposure_female,      
                 data = data_train_female_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -1857,7 +2062,7 @@ outcome_and_exposure_adolescence <- as.formula(paste(outcome_model_adolescence, 
 
 fit_best_adolescence <- train(outcome_and_exposure_adolescence,  
                 data = data_train_adolescence_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -1970,7 +2175,7 @@ outcome_and_exposure_youth <- as.formula(paste(outcome_model_youth, "~", paste(e
 
 fit_best_youth <- train(outcome_and_exposure_youth,
                 data = data_train_youth_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2083,7 +2288,7 @@ outcome_and_exposure_adulthood <- as.formula(paste(outcome_model_adulthood, "~",
 
 fit_best_adulthood <- train(outcome_and_exposure_adulthood,   
                 data = data_train_adulthood_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2195,7 +2400,7 @@ outcome_and_exposure_old_age <- as.formula(paste(outcome_model_old_age, "~", pas
 
 fit_best_old_age <- train(outcome_and_exposure_old_age,       
                 data = data_train_old_age_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2308,7 +2513,7 @@ outcome_and_exposure_teach_true <- as.formula(paste(outcome_model_teach_true, "~
 
 fit_best_teach_true <- train(outcome_and_exposure_teach_true,      
                 data = data_train_teach_true_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2421,7 +2626,7 @@ outcome_and_exposure_teach_false <- as.formula(paste(outcome_model_teach_false, 
 
 fit_best_teach_false <- train(outcome_and_exposure_teach_false,  
                 data = data_train_teach_false_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2534,7 +2739,7 @@ outcome_and_exposure_african_american <- as.formula(paste(outcome_model_african_
 
 fit_best_african_american <- train(outcome_and_exposure_african_american,    
                 data = data_train_african_american_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2647,7 +2852,7 @@ outcome_and_exposure_asian <- as.formula(paste(outcome_model_asian, "~", paste(e
 
 fit_best_asian <- train(outcome_and_exposure_asian,    
                 data = data_train_asian_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2760,7 +2965,7 @@ outcome_and_exposure_caucasian <- as.formula(paste(outcome_model_caucasian, "~",
 
 fit_best_caucasian <- train(outcome_and_exposure_caucasian,   
                 data = data_train_caucasian_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2873,7 +3078,7 @@ outcome_and_exposure_hispanic <- as.formula(paste(outcome_model_hispanic, "~", p
 
 fit_best_hispanic <- train(outcome_and_exposure_hispanic,       
                 data = data_train_hispanic_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2986,7 +3191,7 @@ outcome_and_exposure_native_american <- as.formula(paste(outcome_model_native_am
 
 fit_best_native_american <- train(outcome_and_exposure_native_american,     
                 data = data_train_native_american_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3099,7 +3304,7 @@ outcome_and_exposure_ethnicity_other <- as.formula(paste(outcome_model_ethnicity
 
 fit_best_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,   
                 data = data_train_ethnicity_other_without_ID %>% as.data.frame(),
-                method = "ada",
+                method = "gbm",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
