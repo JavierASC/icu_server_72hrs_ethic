@@ -478,7 +478,7 @@ h_start_cforest <- Sys.time()
 
 # Better to run this model separately (sometimes it crashes)
 
-fit_cforest <- train(outcome_and_exposure,                              # 14 min  
+fit_cforest <- train(outcome_and_exposure,                              # 2,5 h  
                 data = data_train_without_ID %>% as.data.frame(),    
                 method = "Rborist",
                 trControl = fitControl,
