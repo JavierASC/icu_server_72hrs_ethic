@@ -618,7 +618,6 @@ final_predictions_Linda = getFinalPredictions(fit_Linda, data_test)
 final_predictions_cforest = getFinalPredictions(fit_cforest, data_test)
 
 # We evaluate the Balanced Accuracy, the F1 parameter and the confusion matrix, and select the model that meets the most criteria.
-# ada has the best balanced accuracy.
 
 ```
 
