@@ -1017,7 +1017,7 @@ final_predictions_best_2 = getFinalPredictions(fit_best_2, data_test)
 
 set.seed(123)
 
-fit_xgb <- train(outcome_and_exposure,                             
+fit_gbm <- train(outcome_and_exposure,                             
                  data = data_train_without_ID %>% as.data.frame(),
                  method = "gbm",
                  trControl = fitControl,
@@ -1080,7 +1080,7 @@ final_predictions_best_3 = getFinalPredictions(fit_best_3, data_test)
 
 set.seed(123)
 
-fit_xgb <- train(outcome_and_exposure,                          
+fit_ada <- train(outcome_and_exposure,                          
                  data = data_train_without_ID %>% as.data.frame(),
                  method = "ada",
                  trControl = fitControl,
