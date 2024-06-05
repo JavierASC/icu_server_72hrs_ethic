@@ -1,0 +1,215 @@
+---
+title: "Table 1: Prediction of mortality in ICU at 72 hours"
+author: "Javier Quintero Sosa"
+date: "2024-06-03"
+output: html_document
+---
+
+# PACKAGE LOADING (install if necessary)
+
+```{r}
+
+library(kableExtra)
+library(readr)
+library(tableone)
+library(tidyverse)
+library(webshot2)
+library(smd)
+
+```
+
+
+# LOAD DATA
+
+```{r message=FALSE, warning=FALSE}
+
+# 0. LOAD THE DATA
+
+# file.choose()     # Shows the location of the file.
+
+df_for_table1 <- read_csv("C:\\Users\\jquintero24E\\Documents\\GitHub\\icu_mortality_model\\Analysis\\dataframe_mA.csv")
+
+# Delete first column (count)
+
+df_for_table1 <- df_for_table1 %>%
+  select(-...1)
+
+# Change alive and dead to Alive and Expired
+
+df_for_table1 <- df_for_table1 %>%
+  mutate(icu_mortality_72hrs = ifelse(icu_mortality_72hrs == "1", "Alive", ifelse(icu_mortality_72hrs == "2", "Expired", icu_mortality_72hrs)))
+
+```
+
+# CHANGE NUMBERS OF ETHNICITY TO THE ORIGINAL NAMES
+
+```{r}
+
+# African American: 0   Asian: 1   Caucasian: 2   Hispanic: 3   Native American: 4   Other/Unknown: 5
+
+df_for_table1 <- df_for_table1 %>%
+  mutate(ethnicity= ifelse(
+      ethnicity == 0, "African American", ifelse(
+        ethnicity == 1, "Asian", ifelse(
+          ethnicity == 2, "Caucasian", ifelse(
+            ethnicity == 3, "Hispanic", ifelse(
+              ethnicity == 4, "Native American", ifelse(
+                ethnicity == 5, "Other/Unknown", NA_character_)
+        )
+      )
+    ) 
+  )))
+
+```
+
+
+#             CORRECTION OF THE 0, 1 FACTOR VARIABLES
+
+```{r}
+
+df_for_table1 <- df_for_table1 %>%
+  mutate(
+    sex = ifelse(sex == 1, 0, 1),
+    norepinephrine = ifelse(norepinephrine == 1, 0, 1),
+    phenylephrine = ifelse(phenylephrine == 1, 0, 1),
+    heparin = ifelse(heparin == 1, 0, 1),
+    epinephrine = ifelse(epinephrine == 1, 0, 1),
+    vasopressors_other_bin = ifelse(vasopressors_other_bin == 1, 0, 1),
+    hist_diabetes_bin = ifelse(hist_diabetes_bin == 1, 0, 1),
+    hist_chf_bin = ifelse(hist_chf_bin == 1, 0, 1),
+    hist_copd_bin = ifelse(hist_copd_bin == 1, 0, 1),
+    hist_cancer_bin = ifelse(hist_cancer_bin == 1, 0, 1),
+    hist_renal_bin = ifelse(hist_renal_bin == 1, 0, 1),
+    hist_other_bin = ifelse(hist_other_bin == 1, 0, 1),
+    CABG = ifelse(CABG == 1, 0, 1),
+    Cardiac_arrest = ifelse(Cardiac_arrest == 1, 0, 1),
+    CHF = ifelse(CHF == 1, 0, 1),
+    CVA = ifelse(CVA == 1, 0, 1),
+    Diabetic_ketoacidosis = ifelse(Diabetic_ketoacidosis == 1, 0, 1),
+    MI = ifelse(MI == 1, 0, 1),
+    Rhythm_disturbance = ifelse(Rhythm_disturbance == 1, 0, 1),
+    Sepsis_renal = ifelse(Sepsis_renal == 1, 0, 1),
+    Sepsis_pulmonary = ifelse(Sepsis_pulmonary == 1, 0, 1),
+    apache_other = ifelse(apache_other == 1, 0, 1)
+  )
+
+
+```
+
+
+#               CHANGE THE COLUMNS BACK TO FACTOR TYPE AGAIN
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+df_for_table1$icu_mortality_72hrs <- as.factor(df_for_table1$icu_mortality_72hrs)
+
+df_for_table1$hist_diabetes_bin <- as.factor(df_for_table1$hist_diabetes_bin)
+df_for_table1$hist_chf_bin <- as.factor(df_for_table1$hist_chf_bin)
+df_for_table1$hist_copd_bin <- as.factor(df_for_table1$hist_copd_bin)
+df_for_table1$hist_cancer_bin <- as.factor(df_for_table1$hist_cancer_bin)
+df_for_table1$hist_renal_bin <- as.factor(df_for_table1$hist_renal_bin)
+df_for_table1$hist_other_bin <- as.factor(df_for_table1$hist_other_bin)
+
+df_for_table1$CABG <- as.factor(df_for_table1$CABG)
+df_for_table1$Cardiac_arrest <- as.factor(df_for_table1$Cardiac_arrest)
+df_for_table1$CHF <- as.factor(df_for_table1$CHF)
+df_for_table1$CVA <- as.factor(df_for_table1$CVA)
+df_for_table1$Diabetic_ketoacidosis <- as.factor(df_for_table1$Diabetic_ketoacidosis)
+df_for_table1$MI <- as.factor(df_for_table1$MI)
+df_for_table1$Rhythm_disturbance <- as.factor(df_for_table1$Rhythm_disturbance)
+df_for_table1$Sepsis_renal <- as.factor(df_for_table1$Sepsis_renal)
+df_for_table1$Sepsis_pulmonary <- as.factor(df_for_table1$Sepsis_pulmonary)
+df_for_table1$apache_other <- as.factor(df_for_table1$apache_other)
+
+df_for_table1$sex <- as.factor(df_for_table1$sex)
+
+df_for_table1$heparin <- as.factor(df_for_table1$heparin)
+df_for_table1$norepinephrine <- as.factor(df_for_table1$norepinephrine)
+df_for_table1$epinephrine <- as.factor(df_for_table1$epinephrine)
+df_for_table1$phenylephrine <- as.factor(df_for_table1$phenylephrine)
+df_for_table1$vasopressors_other_bin <- as.factor(df_for_table1$vasopressors_other_bin)
+
+df_for_table1$region <- as.factor(df_for_table1$region)
+df_for_table1$numbedscategory <- as.factor(df_for_table1$numbedscategory)
+df_for_table1$teachingstatus <- as.factor(df_for_table1$teachingstatus)
+
+df_for_table1$ethnicity <- as.factor(df_for_table1$ethnicity)
+
+```
+
+# SELECTION OF THE PATIENTS (24-72h)
+
+```{r}
+# SELECTION OF PATIENTS BASED ON LENGHT OF STAY IN UCI (24-72h = 1-3 days)
+
+# LOS values are in day (units)
+
+df_for_table1 <- df_for_table1 %>%
+  filter(LOS >= 0) %>%
+  filter(LOS <= 3)
+
+# Delete "LOS" column.
+
+df_for_table1 <- df_for_table1 %>%
+  select(-LOS)
+
+```
+
+
+# TABLE 1
+
+```{r}
+
+# Lists of the variables we are going to include in table1 (excepts for the stratification variable)
+
+vars_in_table1<-c('age', 'sex', 'ethnicity', 'prev_dept_los_hrs', 'bicarbonate_clear', 'sodium_clear', 'respiratoryrate_clear', 'BUN_clear', 'nibp_diastolic_clear', 'nibp_systolic_clear', 'nibp_mean_clear', 'temperature_clear', 'glucose_clear', 'potassium_clear', 'hemoglobin_clear', 'calcium_clear', 'norepinephrine', 'phenylephrine', 'heparin', 'epinephrine', 'heartrate_clear', 'vasopressors_other_bin', 'hist_diabetes_bin', 'hist_chf_bin', 'hist_copd_bin', 'hist_cancer_bin', 'hist_renal_bin', 'final_charlson_score', 'CABG', 'Cardiac_arrest', 'CHF', 'CVA', 'Diabetic_ketoacidosis', 'MI', 'Rhythm_disturbance', 'Sepsis_renal', 'Sepsis_pulmonary', 'apache_other', 'teachingstatus')
+
+# Create a dataset with the selected variables and generate an empty list that is going to be used for storing categorical variables.
+
+table1_dataset<- df_for_table1
+cat_variables<-rep(NA, length(vars_in_table1))
+
+
+# Select a variable to stratify by and label it.
+
+ stratifyby <- "icu_mortality_72hrs"
+
+# Detect whether a variable is categorical or not based on the number of distinct variables per category (10 is the threshold)
+ 
+cont<-1
+for (i in 1:length(vars_in_table1) ) {
+  if ( n_distinct(table1_dataset[vars_in_table1[i] ])<=10 ) {
+    print(i)
+    print(vars_in_table1[i])
+    print(names(table1_dataset[vars_in_table1[i]]))
+    cat_variables[cont]<-names(table1_dataset[vars_in_table1[i]])
+    cont<-cont+1
+  }
+}  
+cat_variables<-cat_variables[!is.na(cat_variables)]
+
+table1_base <- print(CreateTableOne(vars = vars_in_table1,
+                                    strata = stratifyby,
+                                    factorVars = cat_variables,
+                                    data = table1_dataset,
+                                    addOverall = TRUE,
+                                    test = TRUE), varLabels = TRUE, smd = TRUE)
+
+
+
+# The line add_header_above() will need to be modified depending on the number of columns of the table.
+
+# Run this IN CONSOLE for html output:
+
+ starification_cats<-n_distinct(table1_dataset[,stratifyby])
+table1_base %>%
+  kbl(caption = "Table 1 of base model A" , align = "c") %>%
+  kable_classic_2(full_width = F, html_font = "Cambria")%>%
+  add_header_above(c(" "," ", 'ICU mortality' = starification_cats," ", "", "" ))
+
+```
+
+
+The p value indicates whether the difference between the groups (Alive and Expired) is significant or not.
+
+SMD measures the magnitude of the difference between the two groups (the bigger the better), in terms of standard deviation.
