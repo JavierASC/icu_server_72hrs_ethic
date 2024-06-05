@@ -1,0 +1,1016 @@
+---
+title: "01_dataset_creation"
+author: "Javier Quintero Sosa // Claudia Jiménez"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+# output:
+#   html_notebook:
+#     code_folding: hide
+#     number_sections: yes
+#     theme: flatly
+#     toc: yes
+#     toc_float: yes
+---
+# Model B (-24 to 24h)
+
+# 0. PACKAGE LOADING (install if necessary)
+
+```{r message=FALSE, warning=FALSE}
+
+library(caret)
+library(bigrquery)
+library(bigQueryR)
+library(DBI)
+library(DiagrammeR)
+library(dplyr)
+library(forecast)
+library(forcats)
+library(ggplot2)
+library(here)
+library(kernlab) #required for SVM
+library(knitr)
+library(lubridate)
+library(mice)
+library(naniar)
+library(plotly)
+library(randomForest)
+library(rattle)
+library(readr)
+library(ROCR)
+library(rpart)
+library(skimr)
+library(summarytools)
+library(tableone)
+library(table1)
+library(tidyverse)
+library(tidyr)
+# library(xlsx)
+library(xtable)
+
+```
+
+
+# OBJECTIVE VARIABLE (TARGET)
+
+icu_mortality_72hrs: 0 ALIVE, 1 EXPIRED
+
+
+# 1. BRING DATAFRAMES FROM BIG QUERY
+
+```{r}
+
+run_query<-function(query){
+  query_output<-dbGetQuery(con,query)
+  return(query_output)
+}
+
+getSQL <- function(filepath) {
+  con = file(filepath, "r")
+  sql.string <- ""
+  while (TRUE) {
+    line <- readLines(con, n = 1)
+    if (length(line) == 0) {
+      break
+    }
+    line <- gsub("\\t", " ", line)
+    if (grepl("--", line) == TRUE) {
+      line <- paste(sub("--", "/*", line), "*/")
+    }
+    sql.string <- paste(sql.string, line)
+  }
+  close(con)
+  return(sql.string)
+}
+```
+
+# 2. CONNECT BIG QUERY USER
+
+```{r message=FALSE, warning=FALSE}
+
+bigrquery::bq_auth()
+
+project_id <- readline(prompt = "Enter your project ID: ")
+
+con <- dbConnect(
+  bigrquery::bigquery(),
+  project = project_id
+)
+
+```
+
+After logging in with our user (Selection: 1 [if it is the first time], or Selection: 2), it asks us for the project ID. This must be obtained in Big Query, in the project selection (above, next to "Google Cloud"), in the "ID" column. The ID is copied and pasted into the R console. In our case, project ID: proyecto-aetsa
+
+
+# 3. BRING THE TABLES INTO R STUDIO (using .sql notepad)
+
+The queries used in BIG QUERY are pasted into notepads, and these are brought into R Studio.
+
+```{r message=FALSE, warning=FALSE}
+
+# getwd()   # File path.
+
+basic_demographics <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/basic_demographics.sql"))
+
+icu_mortality_72hrs <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/icu_mortality_72hrs.sql"))
+
+apachescore <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/apachescore.sql"))
+
+apacheadmission <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/apacheadmission.sql"))
+
+prev_dept_los <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/prev_dept_los.sql"))
+
+clearance_pivoted_vitals <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/clearance_pivoted_vitals_m2.sql"))
+
+clearance_pivoted_lab <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/clearance_pivoted_lab_m2.sql"))
+
+pivoted_med <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/pivoted_med_m2.sql"))
+
+charlsonscore <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/charlsonscore.sql"))
+
+history_dx <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/history_dx.sql"))
+
+hospitalid_patientid <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/hospitalid_patientid.sql"))
+
+ethnicity <- run_query(getSQL("C:/Users/jquintero24E/Documents/GitHub/icu_mortality_model/Analysis/sql/ethnicity.sql"))
+
+```
+
+Once the previous code has been executed, you must have all the necessary tables (dataframe) (separately).
+
+# JOIN DATAFRAMES in "dataframe_for_modeling"
+
+```{r}
+
+# Define the dataframes to join.
+dfs_to_join <- list(basic_demographics, clearance_pivoted_vitals, icu_mortality_72hrs,apachescore, apacheadmission, prev_dept_los, clearance_pivoted_lab, pivoted_med, charlsonscore, history_dx, hospitalid_patientid, ethnicity)
+
+# Perform a left join
+dataframe_for_modeling <- Reduce(function(x, y) merge(x, y, by = "patientunitstayid", all.x = TRUE), dfs_to_join)
+
+
+# Initial number of patients
+
+ab <- as.numeric(nrow(dataframe_for_modeling))
+
+```
+
+
+# 4. ANALYZE THE % OF MISSING
+
+If a variable has more than 50% missing, we remove it from the study and we do not impute it.
+
+```{r}
+
+# MAP THE MISSING VALUES BEFORE ELIMINATING THE NA
+
+# Columns with NA
+
+names(dataframe_for_modeling)[colSums(is.na(dataframe_for_modeling)) > 0]
+
+# Nº columns with NA
+
+n_var_miss(dataframe_for_modeling)
+
+# Table with the number of NAs by columns
+
+miss_summary_preclean <- miss_var_summary(dataframe_for_modeling)
+
+#---
+
+# Graph with % of missing values (Appears below)
+
+gg_miss_var(dataframe_for_modeling, show_pct=TRUE)   # Too much data. It is not appreciated well.
+
+# GRAPHIC REPRESENTATION
+
+# Calculate the percentage of missing values per variable
+
+missing_percentage <- colMeans(is.na(dataframe_for_modeling)) * 100
+
+# Create a dataframe for ggplot
+
+missing_data <- data.frame(variable = names(dataframe_for_modeling), missing_percentage = missing_percentage)
+
+# Create the bar chart
+ggplot(missing_data, aes(x = reorder(variable, -missing_percentage), y = missing_percentage)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Porcentaje de Valores Faltantes por Variable",
+       x = "Variable", y = "Porcentaje de Valores Faltantes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        axis.title.x = element_blank())
+
+# ---
+
+# Variables with >50% missing:
+
+# bands_last, bands_first_chartoffset, bands_first, bands_last_chartoffset, bands_clear, TotalCO2_last, ptt_last, lactate_last, TotalCO2_first_chartoffset, TotalCO2_first, TotalCO2_last_chartoffset, TotalCO2_clear, INR_last, bilirubin_last, ibp_mean_clear, ibp_mean_last, alp_last, alt_last, ibp_systolic_clear, ibp_diastolic_clear, ibp_diastolic_last, ibp_systolic_last, ast_last, ibp_mean_first, ibp_diastolic_first, ibp_systolic_first, ibp_diastolic_first_chartoffset, ibp_diastolic_last_chartoffset, ibp_systolic_first_chartoffset, ibp_systolic_last_chartoffset, albumin_last, ptt_first, ibp_mean_first_chartoffset, ibp_mean_last_chartoffset, lactate_first_chartoffset, lactate_first, lactate_last_chartoffset, lactate_clear, ptt_first_chartoffset, ptt_last_chartoffset, ptt_clear, INR_first_chartoffset, INR_first, INR_last_chartoffset, INR_clear, bilirubin_first_chartoffset, bilirubin_first, bilirubin_last_chartoffset, bilirubin_clear, alp_first_chartoffset, alp_first, alp_last_chartoffset, alp_clear, alt_first_chartoffset, alt_first, alt_last_chartoffset, alt_clear, ast_first_chartoffset, ast_first, ast_last_chartoffset, ast_clear, albumin_first_chartoffset, albumin_first, albumin_last_chartoffset, albumin_clear
+
+# Remove variables with >50% missing:
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  select(-bands_last, -bands_first_chartoffset, -bands_first, -bands_last_chartoffset, -bands_clear, -TotalCO2_last, -ptt_last, -lactate_last, -TotalCO2_first_chartoffset, -TotalCO2_first, -TotalCO2_last_chartoffset, -TotalCO2_clear, -INR_last, -bilirubin_last, -ibp_mean_clear, -ibp_mean_last, -alp_last, -alt_last, -ibp_systolic_clear, -ibp_diastolic_clear, -ibp_diastolic_last, -ibp_systolic_last, -ast_last, -ibp_mean_first, -ibp_diastolic_first, -ibp_systolic_first, -ibp_diastolic_first_chartoffset, -ibp_diastolic_last_chartoffset, -ibp_systolic_first_chartoffset, -ibp_systolic_last_chartoffset, -albumin_last, -ptt_first, -ibp_mean_first_chartoffset, -ibp_mean_last_chartoffset, -lactate_first_chartoffset, -lactate_first, -lactate_last_chartoffset, -lactate_clear, -ptt_first_chartoffset, -ptt_last_chartoffset, -ptt_clear, -INR_first_chartoffset, -INR_first, -INR_last_chartoffset, -INR_clear, -bilirubin_first_chartoffset, -bilirubin_first, -bilirubin_last_chartoffset, -bilirubin_clear, -alp_first_chartoffset, -alp_first, -alp_last_chartoffset, -alp_clear, -alt_first_chartoffset, -alt_first, -alt_last_chartoffset, -alt_clear, -ast_first_chartoffset, -ast_first, -ast_last_chartoffset, -ast_clear, -albumin_first_chartoffset, -albumin_first, -albumin_last_chartoffset, -albumin_clear)
+
+```
+
+
+# 5. DATA CLEANING
+
+## 5.1 clearance_pivoted_vitals
+
+```{r}
+
+# Replace the NA with the median. Result: clearance_pivoted_vitals. "first" and "last"
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(
+    heartrate_first = ifelse(is.na(heartrate_first), median(heartrate_first, na.rm = TRUE), heartrate_first),
+    heartrate_last = ifelse(is.na(heartrate_last), median(heartrate_last, na.rm = TRUE), heartrate_last),
+    respiratoryrate_first = ifelse(is.na(respiratoryrate_first), median(respiratoryrate_first, na.rm = TRUE), respiratoryrate_first),
+    respiratoryrate_last = ifelse(is.na(respiratoryrate_last), median(respiratoryrate_last, na.rm = TRUE), respiratoryrate_last),
+    spo2_first = ifelse(is.na(spo2_first), median(spo2_first, na.rm = TRUE), spo2_first),
+    spo2_last = ifelse(is.na(spo2_last), median(spo2_last, na.rm = TRUE), spo2_last),
+    nibp_systolic_first = ifelse(is.na(nibp_systolic_first), median(nibp_systolic_first, na.rm = TRUE), nibp_systolic_first),
+    nibp_systolic_last = ifelse(is.na(nibp_systolic_last), median(nibp_systolic_last, na.rm = TRUE), nibp_systolic_last),
+    nibp_diastolic_first = ifelse(is.na(nibp_diastolic_first), median(nibp_diastolic_first, na.rm = TRUE), nibp_diastolic_first),
+    nibp_diastolic_last = ifelse(is.na(nibp_diastolic_last), median(nibp_diastolic_last, na.rm = TRUE), nibp_diastolic_last),
+    nibp_mean_first = ifelse(is.na(nibp_mean_first), median(nibp_mean_first, na.rm = TRUE), nibp_mean_first),
+    nibp_mean_last = ifelse(is.na(nibp_mean_last), median(nibp_mean_last, na.rm = TRUE), nibp_mean_last),
+    temperature_first = ifelse(is.na(temperature_first), median(temperature_first, na.rm = TRUE), temperature_first),
+    temperature_last = ifelse(is.na(temperature_last), median(temperature_last, na.rm = TRUE), temperature_last),
+  )
+
+
+# Replace the NAs with the difference. Result: clearance_pivoted_vitals. "clear"
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(
+    heartrate_clear = ifelse(is.na(heartrate_clear), heartrate_last - heartrate_first, heartrate_clear),
+    respiratoryrate_clear = ifelse(is.na(respiratoryrate_clear), respiratoryrate_last - respiratoryrate_first, respiratoryrate_clear),
+    spo2_clear = ifelse(is.na(spo2_clear), spo2_last - spo2_first, spo2_clear),
+    nibp_systolic_clear = ifelse(is.na(nibp_systolic_clear), nibp_systolic_last - nibp_systolic_first, nibp_systolic_clear),
+    nibp_diastolic_clear = ifelse(is.na(nibp_diastolic_clear), nibp_diastolic_last - nibp_diastolic_first, nibp_diastolic_clear),
+    nibp_mean_clear = ifelse(is.na(nibp_mean_clear), nibp_mean_last - nibp_mean_first, nibp_mean_clear),
+    temperature_clear = ifelse(is.na(temperature_clear), temperature_last - temperature_first, temperature_clear),
+  )
+
+```
+
+
+## 5.2 clearance_pivoted_lab
+
+```{r}
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(
+    BUN_first = ifelse(is.na(BUN_first), median(BUN_first, na.rm = TRUE), BUN_first),
+    BUN_last = ifelse(is.na(BUN_last), median(BUN_last, na.rm = TRUE), BUN_last),
+    calcium_first = ifelse(is.na(calcium_first), median(calcium_first, na.rm = TRUE), calcium_first),
+    calcium_last = ifelse(is.na(calcium_last), median(calcium_last, na.rm = TRUE), calcium_last),
+    creatinine_first = ifelse(is.na(creatinine_first), median(creatinine_first, na.rm = TRUE), creatinine_first),
+    creatinine_last = ifelse(is.na(creatinine_last), median(creatinine_last, na.rm = TRUE), creatinine_last),
+    glucose_first = ifelse(is.na(glucose_first), median(glucose_first, na.rm = TRUE), glucose_first),
+    glucose_last = ifelse(is.na(glucose_last), median(glucose_last, na.rm = TRUE), glucose_last),
+    bicarbonate_first = ifelse(is.na(bicarbonate_first), median(bicarbonate_first, na.rm = TRUE), bicarbonate_first),
+    bicarbonate_last = ifelse(is.na(bicarbonate_last), median(bicarbonate_last, na.rm = TRUE), bicarbonate_last),
+    hematocrit_first = ifelse(is.na(hematocrit_first), median(hematocrit_first, na.rm = TRUE), hematocrit_first),
+    hematocrit_last = ifelse(is.na(hematocrit_last), median(hematocrit_last, na.rm = TRUE), hematocrit_last),
+    hemoglobin_first = ifelse(is.na(hemoglobin_first), median(hemoglobin_first, na.rm = TRUE), hemoglobin_first),
+    hemoglobin_last = ifelse(is.na(hemoglobin_last), median(hemoglobin_last, na.rm = TRUE), hemoglobin_last),
+    platelets_first = ifelse(is.na(platelets_first), median(platelets_first, na.rm = TRUE), platelets_first),
+    platelets_last = ifelse(is.na(platelets_last), median(platelets_last, na.rm = TRUE), platelets_last),
+    potassium_first = ifelse(is.na(potassium_first), median(potassium_first, na.rm = TRUE), potassium_first),
+    potassium_last = ifelse(is.na(potassium_last), median(potassium_last, na.rm = TRUE), potassium_last),
+    sodium_first = ifelse(is.na(sodium_first), median(sodium_first, na.rm = TRUE), sodium_first),
+    sodium_last = ifelse(is.na(sodium_last), median(sodium_last, na.rm = TRUE), sodium_last),
+    wbc_first = ifelse(is.na(wbc_first), median(wbc_first, na.rm = TRUE), wbc_first),
+    wbc_last = ifelse(is.na(wbc_last), median(wbc_last, na.rm = TRUE), wbc_last),
+  )
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(
+    BUN_clear = ifelse(is.na(BUN_clear), BUN_last - BUN_first, BUN_clear),
+    calcium_clear = ifelse(is.na(calcium_clear), calcium_last - calcium_first, calcium_clear),
+    creatinine_clear = ifelse(is.na(creatinine_clear), creatinine_last - creatinine_first, creatinine_clear),
+    glucose_clear = ifelse(is.na(glucose_clear), glucose_last - glucose_first, glucose_clear),
+    bicarbonate_clear = ifelse(is.na(bicarbonate_clear), bicarbonate_last - bicarbonate_first, bicarbonate_clear),
+    hematocrit_clear = ifelse(is.na(hematocrit_clear), hematocrit_last - hematocrit_first, hematocrit_clear),
+    hemoglobin_clear = ifelse(is.na(hemoglobin_clear), hemoglobin_last - hemoglobin_first, hemoglobin_clear),
+    platelets_clear = ifelse(is.na(platelets_clear), platelets_last - platelets_first, platelets_clear),
+    potassium_clear = ifelse(is.na(potassium_clear), potassium_last - potassium_first, potassium_clear),
+    sodium_clear = ifelse(is.na(sodium_clear), sodium_last - sodium_first, sodium_clear),
+    wbc_clear = ifelse(is.na(wbc_clear), wbc_last - wbc_first, wbc_clear),
+  )
+
+
+```
+
+
+## 5.3  hist_ HIST
+
+```{r message=FALSE, warning=FALSE}
+
+# VALUES "HIST"
+
+# 1. ASSIGN 0 TO THE NA VALUES (if there is no data, you do not have the comorbidity before arriving at the hospital)
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_metastasis_bin = replace_na(hist_metastasis_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_vih_sida_bin = replace_na(hist_vih_sida_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_cirrosis_liver_bin = replace_na(hist_cirrosis_liver_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_stroke_bin = replace_na(hist_stroke_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_renal_bin = replace_na(hist_renal_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_diabetes_bin = replace_na(hist_diabetes_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_cancer_bin = replace_na(hist_cancer_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_leukemia_bin = replace_na(hist_leukemia_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_lymphoma_bin = replace_na(hist_lymphoma_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_myocardial_infar_bin = replace_na(hist_myocardial_infar_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_chf_bin = replace_na(hist_chf_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_pvd_bin = replace_na(hist_pvd_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_tia_bin = replace_na(hist_tia_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_copd_bin = replace_na(hist_copd_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_ctd_bin = replace_na(hist_ctd_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_pud_bin = replace_na(hist_pud_bin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_liver_bin = replace_na(hist_liver_bin, 0))
+
+
+#-----
+
+# 2. GET THE 5 COLUMNS WITH THE MOST "1" VALUES (count)
+
+# The value "1" means that the patient "does" have the comorbidity. The other columns are grouped in the variable "other".
+
+
+# List of variables (Taken from the initial df)
+
+variables <- c("hist_metastasis_bin", "hist_vih_sida_bin", "hist_cirrosis_liver_bin", "hist_stroke_bin",
+               "hist_renal_bin", "hist_diabetes_bin", "hist_cancer_bin", "hist_leukemia_bin",
+               "hist_lymphoma_bin", "hist_myocardial_infar_bin", "hist_chf_bin", "hist_pvd_bin",
+               "hist_tia_bin", "hist_copd_bin", "hist_ctd_bin",
+               "hist_pud_bin", "hist_liver_bin")
+
+# Count (existence "1" or not "0") and select the five variables with the most "1".
+
+top5_hist_dx <- dataframe_for_modeling %>%
+  select(all_of(variables)) %>%
+  dplyr::summarise(across(everything(), ~sum(. == 1), .names = "Conteo_{.col}")) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "Conteo") %>%
+  arrange(desc(Conteo)) %>%
+  head(5)
+
+# Show the final result
+print(top5_hist_dx)
+
+# 3. CREATE "HIST OTHER" COLUMN THAT GROUPES ALL COLUMNS (INCLUDING THOSE IN THE TOP 5)
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_other = rowSums(select(., starts_with("hist_")) == 1))
+
+# Column for each patient coded 0 and 1. 0 if they have nothing, 1 if they have one or more cormobilities
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_other_bin = ifelse(hist_other == 0, 0, 1))
+
+
+# Remove NAs from hist_other_bin.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(hist_other_bin = replace_na(hist_other_bin, 0))
+
+# NOW, IN THE FINAL DATAFRAME, SELECT ONLY THE TOP 5 COLUMNS AND THE hist_other COLUMN. WE EXPORT THIS RESULTING DATAFRAME IN EXCEL AND IT IS THE ONE WE USE FOR MODELING
+
+
+# Force values 0 and 1 to be of type factor (could also be boolean, i.e. TRUE or FALSE)
+
+dataframe_for_modeling$hist_diabetes_bin <- as.factor(dataframe_for_modeling$hist_diabetes_bin)
+dataframe_for_modeling$hist_chf_bin <- as.factor(dataframe_for_modeling$hist_chf_bin)
+dataframe_for_modeling$hist_copd_bin <- as.factor(dataframe_for_modeling$hist_copd_bin)
+dataframe_for_modeling$hist_cancer_bin <- as.factor(dataframe_for_modeling$hist_cancer_bin)
+dataframe_for_modeling$hist_renal_bin <- as.factor(dataframe_for_modeling$hist_renal_bin)
+dataframe_for_modeling$hist_other_bin <- as.factor(dataframe_for_modeling$hist_other_bin)
+
+```
+
+
+## 5.4  VASOPRESSORS
+
+```{r message=FALSE, warning=FALSE}
+
+# VASOPRESSOR VALUES (pivoted_med)
+
+# 1. ASSIGN 0 TO NA VALUES
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(norepinephrine = replace_na(norepinephrine, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(epinephrine = replace_na(epinephrine, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(dopamine = replace_na(dopamine, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(dobutamine = replace_na(dobutamine, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(phenylephrine = replace_na(phenylephrine, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(vasopressin = replace_na(vasopressin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(milrinone = replace_na(milrinone, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(heparin = replace_na(heparin, 0))
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(warfarin = replace_na(warfarin, 0))
+
+
+#-----
+
+
+# 2. GET THE 4 COLUMNS WITH THE MOST "1" VALUES (count)
+
+# Variable list
+
+variables_2 <- c("norepinephrine", "epinephrine", "dopamine", "dobutamine", "phenylephrine", "vasopressin", "milrinone", "heparin", "warfarin")
+
+# Perform the count and select the four variables with plus 1
+
+top4_vasopressors <- dataframe_for_modeling %>%
+  select(all_of(variables_2)) %>%
+  dplyr::summarise(across(everything(), ~sum(. == 1), .names = "Conteo_{.col}")) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "Conteo") %>%
+  arrange(desc(Conteo)) %>%
+  head(4)
+
+# Show the final result
+
+print(top4_vasopressors)
+
+a <- dataframe_for_modeling %>%
+  select(norepinephrine)
+
+# 2. CREATE "VASOPRESSORS_OTHER" COLUMN THAT ADDS ALL THE HIST COLUMNS (EXCEPT THOSE IN THE TOP 4)
+
+# Remove: "heparin", "norepinephrine", "warfarin", "phenylephrine", since these will have their own columns in the dataframe.
+
+## Column for each patient indicating the total number of vasopressors used by each patient.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(vasopressors_other = rowSums(select(., c("epinephrine", "dopamine", "dobutamine", "vasopressin", "milrinone")) == 1))
+
+## Column for each patient coded 0 and 1. 0 if nothing is used, 1 if one or more vasopressors are used
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(vasopressors_other_bin = ifelse(vasopressors_other == 0, 0, 1))
+
+# IN THE FINAL DATAFRAME THE 4 TOP COLUMNS OF VASOPRESSORS ARE SELECTED AND THE COLUMN "vasopressors_other".
+
+
+# Later it is forced to be of factor type (after removing the NAs)
+
+```
+
+
+## 5.5  apacheadmissiondx
+
+```{r}
+
+# TOP 10 APACHESCORE
+
+# 0. UNIQUE COLUMN VALUES (for information only).
+
+# (unique(apacheadmission$apacheadmissiondx))
+
+
+# 1. We delete rows without values, NA.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  drop_na(apacheadmissiondx)
+
+# 2. IDENTIFY THE 10 MOST FREQUENT CATEGORIES (in this case they are the lines of the dataframe, not the columns, since everything is within a single column)
+
+# Count the frequency of each category
+
+apache_counts <- dataframe_for_modeling %>%
+  count(apacheadmissiondx, name = "Frequency")
+
+# Identify the 10 most frequent categories
+
+top_categories <- apache_counts %>%
+  top_n(n = 10, wt = Frequency) %>%
+  pull(apacheadmissiondx)
+
+# Group less frequent categories under "Other"
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+ mutate(apacheadmissiondx = fct_lump(apacheadmissiondx, n = 10, other_level = "Other"))
+
+# Recount frequency after grouping
+top_apacheadmissiondx <- dataframe_for_modeling %>%
+  count(apacheadmissiondx, name = "Frequency")
+
+# Show the result
+
+print(top_apacheadmissiondx)
+
+
+# 3. LIST OF THE 10 MOST REPEATED CATEGORIES
+
+top_categories <- c("CABG alone, coronary artery bypass grafting",
+  "Cardiac arrest (with or without respiratory arrest; for respiratory arrest see Respiratory System)",
+  "CHF, congestive heart failure",
+  "CVA, cerebrovascular accident/stroke",
+  "Diabetic ketoacidosis",
+  "Emphysema/bronchitis",
+  "Infarction, acute myocardial (MI)",
+  "Rhythm disturbance (atrial, supraventricular)",
+  "Sepsis, pulmonary",
+  "Sepsis, renal/UTI (including bladder)")
+
+# 4. RECODE THE REST OF VALUES AS "Other" in the original dataframe.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(
+    apacheadmissiondx = case_when(
+      apacheadmissiondx == "CABG alone, coronary artery bypass grafting" ~ "CABG alone, coronary artery bypass grafting",
+      apacheadmissiondx == "Cardiac arrest (with or without respiratory arrest; for respiratory arrest see Respiratory System)" ~ "Cardiac arrest (with or without respiratory arrest; for respiratory arrest see Respiratory System)",
+      apacheadmissiondx == "CHF, congestive heart failure" ~ "CHF, congestive heart failure",
+      apacheadmissiondx == "CVA, cerebrovascular accident/stroke" ~ "CVA, cerebrovascular accident/stroke",
+      apacheadmissiondx == "Diabetic ketoacidosis" ~ "Diabetic ketoacidosis",
+      apacheadmissiondx == "Emphysema/bronchitis" ~ "Emphysema/bronchitis",
+      apacheadmissiondx == "Infarction, acute myocardial (MI)" ~ "Infarction, acute myocardial (MI)",
+      apacheadmissiondx == "Rhythm disturbance (atrial, supraventricular)" ~ "Rhythm disturbance (atrial, supraventricular)",
+      apacheadmissiondx == "Sepsis, pulmonary" ~ "Sepsis, pulmonary",
+      apacheadmissiondx == "Sepsis, renal/UTI (including bladder)" ~ "Sepsis, renal/UTI (including bladder)",
+      TRUE ~ "Other",
+      apacheadmissiondx == "Other" ~ "Other"
+    )
+  )
+
+
+# Verification:
+
+# (unique(dataframe_for_modeling$apacheadmissiondx))
+
+
+
+
+# 5. CARRY OUT ONE-HOT ENCODING 
+
+# This separates the column into different columns (one column per value) and 0 and 1 are applied depending on which patient has each value.
+
+columna_a_codificar <- "apacheadmissiondx"
+
+# Create the layout object for one-hot encoding only on the specified column
+dummy_design <- dummyVars(~ ., data = dataframe_for_modeling[, columna_a_codificar, drop = FALSE])
+
+# Apply one-hot encoding to the specified column
+one_hot_encoded_data <- predict(dummy_design, newdata = dataframe_for_modeling[, columna_a_codificar, drop = FALSE])
+
+# Join the result with the original dataframe
+dataframe_for_modeling <- cbind(dataframe_for_modeling, one_hot_encoded_data)
+
+# Now, if we use "colnames(dataframe_for_modeling)" we can see that columns have been created at the end for each value in the apacheadmissiondx column. Also, if we open the fataframe "one_hot_encoded_data" we can see each column and how values 0 and 1 are assigned.
+
+
+
+# These values are of numerical type, so they must be converted to factor type.
+
+# Force values 0 and 1 to be of type factor (could also be boolean, i.e. TRUE or FALSE)
+
+dataframe_for_modeling$`apacheadmissiondxCABG alone, coronary artery bypass grafting` <- as.factor(dataframe_for_modeling$`apacheadmissiondxCABG alone, coronary artery bypass grafting`)
+
+dataframe_for_modeling$`apacheadmissiondxCardiac arrest (with or without respiratory arrest; for respiratory arrest see Respiratory System)` <- as.factor(dataframe_for_modeling$`apacheadmissiondxCardiac arrest (with or without respiratory arrest; for respiratory arrest see Respiratory System)`)
+
+dataframe_for_modeling$`apacheadmissiondxCHF, congestive heart failure` <- as.factor(dataframe_for_modeling$`apacheadmissiondxCHF, congestive heart failure`)
+
+dataframe_for_modeling$`apacheadmissiondxCVA, cerebrovascular accident/stroke` <- as.factor(dataframe_for_modeling$`apacheadmissiondxCVA, cerebrovascular accident/stroke`)
+
+dataframe_for_modeling$`apacheadmissiondxDiabetic ketoacidosis` <- as.factor(dataframe_for_modeling$`apacheadmissiondxDiabetic ketoacidosis`)
+
+dataframe_for_modeling$`apacheadmissiondxInfarction, acute myocardial (MI)` <- as.factor(dataframe_for_modeling$`apacheadmissiondxInfarction, acute myocardial (MI)`)
+
+dataframe_for_modeling$`apacheadmissiondxRhythm disturbance (atrial, supraventricular)` <- as.factor(dataframe_for_modeling$`apacheadmissiondxRhythm disturbance (atrial, supraventricular)`)
+
+dataframe_for_modeling$`apacheadmissiondxSepsis, renal/UTI (including bladder)` <- as.factor(dataframe_for_modeling$`apacheadmissiondxSepsis, renal/UTI (including bladder)`)
+
+dataframe_for_modeling$`apacheadmissiondxSepsis, pulmonary` <- as.factor(dataframe_for_modeling$`apacheadmissiondxSepsis, pulmonary`)
+
+dataframe_for_modeling$`apacheadmissiondxOther` <- as.factor(dataframe_for_modeling$`apacheadmissiondxOther`)
+
+# Rename the columns to something simpler
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  rename(CABG = `apacheadmissiondxCABG alone, coronary artery bypass grafting`, Cardiac_arrest = `apacheadmissiondxCardiac arrest (with or without respiratory arrest; for respiratory arrest see Respiratory System)`, CHF = `apacheadmissiondxCHF, congestive heart failure`, CVA = `apacheadmissiondxCVA, cerebrovascular accident/stroke`, Diabetic_ketoacidosis = `apacheadmissiondxDiabetic ketoacidosis`, MI = `apacheadmissiondxInfarction, acute myocardial (MI)`, Rhythm_disturbance = `apacheadmissiondxRhythm disturbance (atrial, supraventricular)`, Sepsis_renal = `apacheadmissiondxSepsis, renal/UTI (including bladder)`, Sepsis_pulmonary = `apacheadmissiondxSepsis, pulmonary`, apache_other = `apacheadmissiondxOther`)
+
+
+```
+
+
+## 5.6  charlson_score
+
+```{r message=FALSE, warning=FALSE}
+
+# CHARLSON SCORE    
+
+# 1. CALCULATE THE MEDIAN OF THE CHARLSON COLUMN
+
+# First you have to eliminate the NAs.
+
+charlson_without_na <- na.omit(dataframe_for_modeling$final_charlson_score)
+
+# Check that there is no longer NA in the created vector.
+
+sum(is.na(charlson_without_na))
+
+# Calculate the median of the vector.
+
+mediana_charlson <- median(charlson_without_na)  # Resultado de la mediana: 4
+
+
+# 2. REPLACE THE NA WITH THE MEDIAN (4)
+
+# Replace the NA with 4 in the column final_charlson_score
+
+dataframe_for_modeling$final_charlson_score <- replace(dataframe_for_modeling$final_charlson_score, is.na(dataframe_for_modeling$final_charlson_score), 4)
+
+# Check that there is no longer NA in the column final_charlson_score
+
+print(sum(is.na(dataframe_for_modeling$final_charlson_score)))
+
+```
+
+
+## 5.7  _clear
+
+```{r}
+
+# COLUMNS "CLEAR"
+
+#bicarbonate_clear
+#nibp_systolic_clear
+#sodium_clear
+#spo2_clear
+#respiratoryrate_clear
+#BUN_clear
+#nibp_diastolic_clear
+#heartrate_clear
+#nibp_mean_clear
+#temperature_clear
+#glucose_clear
+#hematocrit_clear
+#platelets_clear
+#hemoglobin_clear
+#potassium_clear
+#calcium_clear
+#wbc_clear
+#creatinine_clear
+
+```
+
+
+
+## 5.7  Lenght of stay (LOS)
+
+```{r}
+
+# Lenght of stay (LOS)
+
+# This is the time a patient stays in the ICU.
+
+# 1. CHANGE COLUMN NAME
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  rename("LOS" = actualiculos)
+
+# 2. REMOVE NA
+
+dataframe_for_modeling <- dataframe_for_modeling %>% 
+  filter(!is.na(LOS))
+
+b <- as.numeric(nrow(dataframe_for_modeling))
+
+```
+
+
+
+# 6. DATAFRAME MODIFICATIONS
+
+## 6.1 Correct values ">89"
+
+```{r message=FALSE, warning=FALSE}
+
+# Ensure that the "age" class is numerical. Replace ">89" with 90.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(
+    age = ifelse(age == '> 89', 90,
+                          ifelse(trimws(age) == '', NA_real_,
+                                  as.numeric(age)))
+  ) %>%
+  mutate(
+    sex = ifelse(
+      sex == 2, 1,
+      ifelse(
+        sex == 1, 0, NA_character_
+      )
+    ) 
+  )
+
+# Male: 0   Female: 1
+
+# Force values 0 and 1 to be of type factor (could also be boolean, i.e. TRUE or FALSE)
+
+dataframe_for_modeling$sex <- as.factor(dataframe_for_modeling$sex)
+
+
+# Exclusion Criteria 1: Filter age by >16 years (it is an exclusion criterion)
+
+dataframe_for_modeling <- dataframe_for_modeling %>% 
+  filter(age > 16)
+
+
+# Patients after Exclusion Criteria 1
+c <- as.numeric(nrow(dataframe_for_modeling))
+
+```
+
+
+## 6.2 NA Corrections
+
+```{r}
+
+# Exclusion Criteria 2: remove NA rows in the variable "sex"
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  filter(!is.na(sex))
+
+# Patients after Exclusion Criteria 2
+d <- as.numeric(nrow(dataframe_for_modeling))
+
+
+# Remove NA from the variable icu_mortality_72hrs
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(icu_mortality_72hrs = coalesce(icu_mortality_72hrs, 0))
+
+# Remove NA from the variable age
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  filter(!is.na(age))
+
+# Change the NA of the apachescoreIV variable to the median
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(apachescoreIV = ifelse(is.na(apachescoreIV), median(apachescoreIV, na.rm = TRUE), apachescoreIV))
+
+# Change minutes to hours for variable prev_dept_los (time spent in hospital before entering the ICU)
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(prev_dept_los_hrs = abs(prev_dept_los/60)) %>%
+  select(-prev_dept_los)
+
+```
+
+
+```{r}
+
+# Replace NA with 0 for pivoted_med
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+mutate(
+norepinephrine = coalesce(norepinephrine, 0),
+epinephrine = coalesce(epinephrine, 0),
+dopamine = coalesce(dopamine, 0),
+dobutamine = coalesce(dobutamine, 0),
+phenylephrine = coalesce(phenylephrine, 0),
+vasopressin = coalesce(vasopressin, 0),
+milrinone = coalesce(milrinone, 0),
+heparin = coalesce(heparin, 0),
+warfarin = coalesce(warfarin, 0),
+)
+
+# Force values 0 and 1 to be of type factor (could also be boolean, i.e. TRUE or FALSE)
+
+dataframe_for_modeling$heparin <- as.factor(dataframe_for_modeling$heparin)
+dataframe_for_modeling$norepinephrine <- as.factor(dataframe_for_modeling$norepinephrine)
+dataframe_for_modeling$warfarin <- as.factor(dataframe_for_modeling$warfarin)
+dataframe_for_modeling$phenylephrine <- as.factor(dataframe_for_modeling$phenylephrine)
+dataframe_for_modeling$vasopressors_other_bin <- as.factor(dataframe_for_modeling$vasopressors_other_bin)
+
+```
+
+
+## 6.3 icu_mortality_72hrs
+
+```{r}
+
+# ALIVE:0   EXPIRED:1
+
+# Force values 0 and 1 to be of type factor (could also be boolean, i.e. TRUE or FALSE)
+
+dataframe_for_modeling$icu_mortality_72hrs <- as.factor(dataframe_for_modeling$icu_mortality_72hrs)
+
+```
+
+
+## 6.4 hospital
+
+```{r}
+
+## NA
+
+# teachingstatus: 0 NA
+# numbedscategory: 25.215 NA
+# region: 13.805 NA
+
+
+# By the moment, I delete all rows  with NA
+# dataframe_for_modeling <- na.omit(dataframe_for_modeling)
+
+#-----------------------------------------------------------------------------
+
+# MODIFICATIONS
+
+# Teachingstatus
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(teachingstatus = ifelse(
+      teachingstatus == "TRUE", 1,
+      ifelse(
+        teachingstatus == "FALSE", 0, NA_character_
+      )
+    ) 
+  )
+
+# FALSE: 0   TRUE: 1
+
+#---
+
+# region
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(region = ifelse(
+      region == "South", 0,
+      ifelse(
+        region == "Northeast", 1, ifelse(
+          region == "West", 2, ifelse(
+            region == "Midwest", 3, NA_character_)
+        )
+      )
+    ) 
+  )
+  
+
+# South: 0   Northeast: 1   West: 2   Midwest: 3
+
+#---
+
+# numbedscategory
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(numbedscategory = ifelse(
+      numbedscategory == "<100", 0,
+      ifelse(
+        numbedscategory == "100 - 249", 1, ifelse(
+          numbedscategory == "250 - 499", 2, ifelse(
+            numbedscategory == ">= 500", 3, NA_character_)
+        )
+      )
+    ) 
+  )
+  
+
+# <100: 0   100 - 249: 1   250 - 499: 2   >= 500: 3
+
+```
+
+
+## 6.5 ethnicity
+
+```{r}
+
+# ethnicity
+
+unique(dataframe_for_modeling$ethnicity)
+
+
+# Remove blank values and add them to "Other/Unknown".
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate_all(~ ifelse(. == "" | is.na(.), "Other/Unknown", .))
+
+
+# Everything needs to be numerical, so numbers are assigned to each category.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  mutate(ethnicity= ifelse(
+      ethnicity == "African American", 0, ifelse(
+        ethnicity == "Asian", 1, ifelse(
+          ethnicity == "Caucasian", 2, ifelse(
+            ethnicity == "Hispanic", 3, ifelse(
+              ethnicity == "Native American", 4, ifelse(
+                ethnicity == "Other/Unknown", 5, NA_character_)
+        )
+      )
+    ) 
+  )))
+  
+
+# African American: 0   Asian: 1   Caucasian: 2   Hispanic: 3   Native American: 4   Other/Unknown: 5
+
+```
+
+# 7. FLOWCHART
+
+```{r}
+
+title <- "Inclusion and Exclusion Criteria Flowchart"
+
+
+flowchart_code <- sprintf("
+digraph flowchart {
+  labelloc=\"t\";  //                                                                          Position of the title
+  label=\"%s\";   //                                                                           Title
+  //                                                                                           Title style
+  graph [fontname = 'Arial', fontsize = 20, fontcolor = 'black', color = 'transparent'];
+  node [shape = box, fontname = 'Arial', fontsize = 12, color = 'black'];
+  ab [label = 'Initial number of patients: %d'];
+  b [label = 'Removal of NA in Lenght of stay: %d'];  
+  c [label = 'Filter patients >=16: %d'];
+  d [label = 'Removal of NA in the sex variable: %d'];
+
+  ab -> b;
+  b -> c;
+  c -> d;
+}
+", title, ab, b, c, d)
+
+
+# Flowchart
+
+grViz(flowchart_code)
+```
+
+
+# 8. EXTRACT DATAFRAME
+
+```{r}
+
+# SELECT: CLEAR VARIABLES, TOP 5 HIST WITH ITS OTHER, TOP 4 VASOPRESSORS WITH ITS OTHER, MODIFIED APACHESCORE COLUMN.
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  select(patientunitstayid, LOS, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, nibp_systolic_clear, sodium_clear, spo2_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, heartrate_clear, nibp_mean_clear, temperature_clear, glucose_clear, hemoglobin_clear, potassium_clear, calcium_clear, wbc_clear, creatinine_clear, norepinephrine, phenylephrine, heparin, warfarin, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, hist_other_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, apache_other, numbedscategory, teachingstatus, region)
+
+
+# Check the NAs in the entire dataframe.
+
+NA_by_column <- colSums(is.na(dataframe_for_modeling))
+
+View(NA_by_column)
+
+
+# CREATE A summarytools (initial df)
+
+# stview(dfSummary(dataframe_for_modeling))
+
+
+# Save the dataframe in excel.
+
+ write.csv(dataframe_for_modeling, "dataframe_mB.csv")
+
+```
