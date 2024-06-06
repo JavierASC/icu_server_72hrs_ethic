@@ -969,9 +969,9 @@ digraph flowchart {
   //                                                                                           Title style
   graph [fontname = 'Arial', fontsize = 20, fontcolor = 'black', color = 'transparent'];
   node [shape = box, fontname = 'Arial', fontsize = 12, color = 'black'];
-  ab [label = 'Initial number of patients: %d'];
+  ab [label = 'Initial number of ICU stays: %d'];
   b [label = 'Removal of NA in Lenght of stay: %d'];  
-  c [label = 'Filter patients >=16: %d'];
+  c [label = 'Filter age >=16: %d'];
   d [label = 'Removal of NA in the sex variable: %d'];
 
   ab -> b;
