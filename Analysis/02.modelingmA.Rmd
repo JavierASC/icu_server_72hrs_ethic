@@ -255,7 +255,7 @@ final_df_selected <- final_df_selected %>%
 
 Factor variables:
 
-icu_mortality_72hrs (Alive: 0 / Exxpired: 1)
+icu_mortality_72hrs (Alive: 0 / Expired: 1)
 Sex (Male: 0 / Female: 1)
 ethnicity (African American: 0 / Asian: 1 / Caucasian: 2 / Hispanic: 3 / Native American: 4 / Other/Unknown: 5)
 teachingstatus (FALSE: 0   TRUE: 1)
@@ -292,7 +292,7 @@ data_test  = final_df_selected[-idx_train, ]
 
 # 3. SAVE DIVISION TO CSV
 
-#  write.csv(data_test, "data_test.csv")
+   write.csv(data_test, "data_test_A.csv")
 #  write.csv(data_train, "data_train.csv")
 
 ```
