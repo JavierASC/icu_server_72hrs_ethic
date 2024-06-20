@@ -3991,7 +3991,7 @@ data_test %>%
 
 #---
 
-# 2. rf
+# 3. xgb
 
 
 # norepinephrine plots
@@ -4026,4 +4026,3 @@ data_test %>%
   scale_color_lancet()
 
 ```
-
