@@ -3624,7 +3624,7 @@ for (i in 1:k) {
 
 
 # SAVE PREDICTIONS
-saveRDS(predictions, file = "pred_folds_gbm.Rda")
+saveRDS(predictions, file = "pred_folds_gbm_C.Rda")
 
 #-------------------------------------------------------------------------------
 
@@ -3661,7 +3661,7 @@ for (i in 1:k) {
 
 
 # SAVE PREDICTIONS
-saveRDS(predictions, file = "pred_folds_rf.Rda")
+saveRDS(predictions, file = "pred_folds_rf_C.Rda")
 
 #-------------------------------------------------------------------------------
 
@@ -3698,14 +3698,14 @@ for (i in 1:k) {
 
 
 # SAVE PREDICTIONS
-saveRDS(predictions, file = "pred_folds_xgb.Rda")
+saveRDS(predictions, file = "pred_folds_xgb_C.Rda")
 
 #-------------------------------------------------------------------------------
 
 # LOAD PREDICTIONS
-predictions_gbm <- readRDS("pred_folds_gbm.Rda")
-predictions_rf <- readRDS("pred_folds_rf.Rda")
-predictions_xgb <- readRDS("pred_folds_xgb.Rda")
+predictions_gbm <- readRDS("pred_folds_gbm_C.Rda")
+predictions_rf <- readRDS("pred_folds_rf_C.Rda")
+predictions_xgb <- readRDS("pred_folds_xgb_C.Rda")
 
 #-------------------------------------------------------------------------------
 
