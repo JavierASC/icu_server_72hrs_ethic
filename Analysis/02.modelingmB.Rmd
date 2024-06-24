@@ -293,7 +293,7 @@ data_test  = final_df_selected[-idx_train, ]
 # 3. SAVE DIVISION TO CSV
 
    write.csv(data_test, "data_test_B.csv")
-#  write.csv(data_train, "data_train.csv")
+   write.csv(data_train, "data_train_B.csv")
 
 ```
 
@@ -3694,11 +3694,13 @@ annotate_figure(comb,
 
 ```{r}
 
+# 1. rf
+
 ##BOOTSTRAPPING SAMPLING
 
 # Aimed to predict a 95% confidence interval for predictions, we are going to conduct our model applying bootstrapping sampling (10 times)
-
 # bootstrapping
+
 set.seed(42)
 
 # number of resamplings
@@ -3707,14 +3709,13 @@ k <- 10
 ## creation of a empty matrix for predictions
 predictions <- matrix(nrow = nrow(data_test), ncol = k)
 
-
 # loop for computing predictions for each sampling process
 for (i in 1:k) {
   sample_indices <- sample(nrow(data_train), replace = TRUE)
   bootstrap_sample <- data_train[sample_indices, ]
-  fit_best_new <- train(outcome_and_exposure,                  
+  fit_best_new <- train(outcome_and_exposure,
                 data = bootstrap_sample,
-                method = "ada",
+                method = "rf",                                                  # Change the model of interest
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3724,87 +3725,268 @@ for (i in 1:k) {
 }
 
 
-# Save the predictions
-saveRDS(predictions, file = "pred_folds.Rda")
-
-# Load the predictions
-# predictions <- readRDS("pred_folds.Rda")
+# SAVE PREDICTIONS
+saveRDS(predictions, file = "pred_folds_rf_B.Rda")
 
 #-------------------------------------------------------------------------------
 
-# Median for each row in prediction matrix
-newdata <- apply(predictions, 1, median_qi)
 
+# 2. xgb
+
+##BOOTSTRAPPING SAMPLING
+
+# Aimed to predict a 95% confidence interval for predictions, we are going to conduct our model applying bootstrapping sampling (10 times)
+# bootstrapping
+
+set.seed(42)
+
+# number of resamplings
+k <- 10
+
+## creation of a empty matrix for predictions
+predictions <- matrix(nrow = nrow(data_test), ncol = k)
+
+# loop for computing predictions for each sampling process
+for (i in 1:k) {
+  sample_indices <- sample(nrow(data_train), replace = TRUE)
+  bootstrap_sample <- data_train[sample_indices, ]
+  fit_best_new <- train(outcome_and_exposure,
+                data = bootstrap_sample,
+                method = "xgb",                                                  # Change the model of interest
+                trControl = fitControl,
+                verbose = F,
+                na.action = na.omit,
+                metric = "F1")
+  # Predicting probability of class 1
+  predictions[, i] <- getFinalPredictions(fit_best_new, data_test)$Expired
+}
+
+
+# SAVE PREDICTIONS
+saveRDS(predictions, file = "pred_folds_xgb_B.Rda")
+
+#-------------------------------------------------------------------------------
+
+# LOAD PREDICTIONS
+predictions_rf <- readRDS("pred_folds_rf_B.Rda")
+predictions_xgb <- readRDS("pred_folds_xgb_B.Rda")
+
+#-------------------------------------------------------------------------------
+
+# DATA TREATMENT
+
+# Median for each row in prediction matrix
+newdata_rf <- apply(predictions_rf, 1, median_qi)
 # Plot!
-data_plot <- do.call(rbind, newdata)
+data_plot_rf <- do.call(rbind, newdata_rf)
 
 #---
 
-# Predictions for hours spent from hospital admission to ICU wards (prev_dept_los_hrs)
+# Median for each row in prediction matrix
+newdata_xgb <- apply(predictions_xgb, 1, median_qi)
+# Plot!
+data_plot_xgb <- do.call(rbind, newdata_xgb)
+
+```
+
+
+## prev_dept_los_hrs
+
+```{r}
+
+# 1. rf
+
+# plot regression line prev_dept_los_hrs
 data_test %>%
-  mutate(pred = data_plot$y,
-         pred.lower = data_plot$ymin,
-         pred.upper = data_plot$ymax) %>%
-  dplyr::group_by(prev_dept_los_hrs) %>%
-  dplyr::summarise(pred.mean = mean(pred),
-            pred.low = mean(pred.lower),
-            pred.up = mean(pred.upper)) %>%
-  ungroup() %>%
-  dplyr::mutate(prev_rounded = round(prev_dept_los_hrs, 1)) %>%
-  dplyr::filter(prev_dept_los_hrs <= 100) %>%
-  dplyr::filter(prev_rounded %in% seq(0, 100, 1)) %>%
-  dplyr::group_by(prev_rounded) %>%
-  dplyr::summarise(pred.mean = mean(pred.mean),
-            pred.low = mean(pred.low),
-            pred.up = mean(pred.up)) %>%
-  ungroup() %>%
-  ggplot(aes(x = prev_rounded, y = round(pred.mean, 2))) +
+  mutate(pred = data_plot_rf$y,
+         pred.lower = data_plot_rf$ymin,
+         pred.upper = data_plot_rf$ymax) %>%
+  filter(prev_dept_los_hrs < 100) %>%
+  ggplot(aes(x = prev_dept_los_hrs, y = pred)) +
   geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
              data = data_test %>%
                mutate(prev_rounded = round(prev_dept_los_hrs, 1),
-                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
+                      pred = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
                filter(prev_dept_los_hrs <= 100) %>%
   filter(prev_rounded %in% seq(0, 100, 1))) +
-  geom_line() +
-  geom_lineribbon(aes(ymin = pred.low,
-                      ymax = pred.up)) +
-  labs(x = "Hours from general admission to ICU admission",
-       y = "Predicted probability of death",
+  geom_point(alpha = 0.04) +
+  geom_smooth(fill = "grey50",
+              col = "black") +
+  labs(title = "rf",
+       x = "Hours from general admission to ICU admission",
+       y = "Predicted probability of death after 72 hours from ICU admission",
        col = "Mortality") +
   theme_minimal() +
   theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = seq(0, 100, 5)) + 
+  scale_x_continuous(breaks = seq(0, 100, 5)) +
   ggsci::scale_color_lancet() +
   guides(col = guide_legend(override.aes = list(alpha = 1)))
 
 #---
 
-# Predictions for age
+# 2. xgb
+
+# plot regression line prev_dept_los_hrs
 data_test %>%
-  dplyr::mutate(pred = data_plot$y,
-         pred.lower = data_plot$ymin,
-         pred.upper = data_plot$ymax) %>%
-  dplyr::group_by(age) %>%
-  dplyr::summarise(pred.mean = mean(pred),
-            pred.low = mean(pred.lower),
-            pred.up = mean(pred.upper)) %>%
-  ungroup() %>%
-  ggplot(aes(x = age, y = pred.mean)) +
-  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.01,
+  mutate(pred = data_plot_xgb$y,
+         pred.lower = data_plot_xgb$ymin,
+         pred.upper = data_plot_xgb$ymax) %>%
+  filter(prev_dept_los_hrs < 100) %>%
+  ggplot(aes(x = prev_dept_los_hrs, y = pred)) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
              data = data_test %>%
                mutate(prev_rounded = round(prev_dept_los_hrs, 1),
-                      pred.mean = ifelse(icu_mortality_72hrs == "Expired", 1, 0))) +
-  geom_line() +
-  geom_lineribbon(aes(ymin = pred.low,
-                      ymax = pred.up)) +
-  labs(x = "Age",
-       y = "Predicted probability of death",
+                      pred = ifelse(icu_mortality_72hrs == "Expired", 1, 0)) %>%
+               filter(prev_dept_los_hrs <= 100) %>%
+  filter(prev_rounded %in% seq(0, 100, 1))) +
+  geom_point(alpha = 0.04) +
+  geom_smooth(fill = "grey50",
+              col = "black") +
+  labs(title = "xgb",
+       x = "Hours from general admission to ICU admission",
+       y = "Predicted probability of death after 72 hours from ICU admission",
        col = "Mortality") +
   theme_minimal() +
   theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = seq(15, 100, 5)) + 
-  scale_color_lancet() +
+  scale_x_continuous(breaks = seq(0, 100, 5)) +
+  ggsci::scale_color_lancet() +
+  guides(col = guide_legend(override.aes = list(alpha = 1)))
+
+
+```
+
+
+## age
+
+```{r}
+
+# 1. rf
+
+# plot regression line age
+data_test %>%
+  mutate(pred = data_plot_rf$y,
+         pred.lower = data_plot_rf$ymin,
+         pred.upper = data_plot_rf$ymax) %>%
+  ggplot(aes(x = age, y = pred)) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
+             data = data_test %>%
+               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
+                      pred = ifelse(icu_mortality_72hrs == "Expired", 1, 0))) +
+  geom_point(alpha = 0.04) +
+  geom_smooth(fill = "grey50",
+              col = "black") +
+  labs(title= "rf",
+       x = "Age",
+       y = "Predicted probability of death after 72 hours from ICU admission",
+       col = "Mortality") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0, 100, 5)) +
+  ggsci::scale_color_lancet() +
+  guides(col = guide_legend(override.aes = list(alpha = 1)))
+
+#---
+
+# 2. xgb
+
+# plot regression line age
+data_test %>%
+  mutate(pred = data_plot_xgb$y,
+         pred.lower = data_plot_xgb$ymin,
+         pred.upper = data_plot_xgb$ymax) %>%
+  ggplot(aes(x = age, y = pred)) +
+  geom_point(aes(col = icu_mortality_72hrs), alpha = 0.1,
+             data = data_test %>%
+               mutate(prev_rounded = round(prev_dept_los_hrs, 1),
+                      pred = ifelse(icu_mortality_72hrs == "Expired", 1, 0))) +
+  geom_point(alpha = 0.04) +
+  geom_smooth(fill = "grey50",
+              col = "black") +
+  labs(title= "xgb",
+       x = "Age",
+       y = "Predicted probability of death after 72 hours from ICU admission",
+       col = "Mortality") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0, 100, 5)) +
+  ggsci::scale_color_lancet() +
   guides(col = guide_legend(override.aes = list(alpha = 1)))
 
 ```
 
+
+## norepinephrine
+
+```{r}
+
+# 1. rf
+
+
+# norepinephrine plots
+data_test %>%
+  mutate(pred = data_plot_rf$y,
+         pred.lower = data_plot_rf$ymin,
+         pred.upper = data_plot_rf$ymax) %>%
+  dplyr::group_by(norepinephrine) %>%
+  dplyr::summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  ggplot(aes(x = norepinephrine, y = pred.mean)) +
+  geom_jitter(aes(y = pred, col = norepinephrine),
+              alpha = 0.07,
+              data = data_test %>%
+  mutate(pred = data_plot_rf$y,
+         pred.lower = data_plot_rf$ymin,
+         pred.upper = data_plot_rf$ymax)) +
+  geom_errorbar(aes(ymin = pred.low,
+                      ymax = pred.up,
+                    y = pred.mean), width = 0.1) +
+  geom_point(size = 4) +
+  theme_bw() +
+  labs(title= "rf",
+       y = "Predicted probability of death after 72 hours from ICU admission",
+       x = "Patient treated with norepinephrine",
+       col = "") +
+  scale_x_discrete(labels = c("No",
+                              "Yes")) +
+  theme(legend.position = "none") +
+  scale_color_lancet()
+
+#---
+
+# 2. xgb
+
+
+# norepinephrine plots
+data_test %>%
+  mutate(pred = data_plot_xgb$y,
+         pred.lower = data_plot_xgb$ymin,
+         pred.upper = data_plot_xgb$ymax) %>%
+  dplyr::group_by(norepinephrine) %>%
+  dplyr::summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  ggplot(aes(x = norepinephrine, y = pred.mean)) +
+  geom_jitter(aes(y = pred, col = norepinephrine),
+              alpha = 0.07,
+              data = data_test %>%
+  mutate(pred = data_plot_xgb$y,
+         pred.lower = data_plot_xgb$ymin,
+         pred.upper = data_plot_xgb$ymax)) +
+  geom_errorbar(aes(ymin = pred.low,
+                      ymax = pred.up,
+                    y = pred.mean), width = 0.1) +
+  geom_point(size = 4) +
+  theme_bw() +
+  labs(title= "xgb",
+       y = "Predicted probability of death after 72 hours from ICU admission",
+       x = "Patient treated with norepinephrine",
+       col = "") +
+  scale_x_discrete(labels = c("No",
+                              "Yes")) +
+  theme(legend.position = "none") +
+  scale_color_lancet()
+
+```
