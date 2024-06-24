@@ -1296,7 +1296,7 @@ ggplot(importance3, aes(x = Overall, y = reorder(rownames(importance), Overall))
 This analysis will only be carried out for the model with the highest Balanced Accuracy.
 
 
-## Option A: We use de trained model to predict by subgroups.
+## Option A: We use the trained model to predict by subgroups.
 
 As will be seen below, in the section "OUTCOMES: PREDICTIONS USING `data_test`", the most precise model is rf (Model 2), so that model will be the one used in this section.
 
