@@ -1398,11 +1398,13 @@ This analysis will only be carried out for the model with the highest Balanced A
 
 ## Option A: We use de trained model to predict by subgroups.
 
+As will be seen below, in the section "OUTCOMES: PREDICTIONS USING `data_test`", the most precise model is rf (Model 2), so that model will be the one used in this section.
+
 ```{r}
 
 # Creation of the final_predictions data joining our data test
 
-final_predictions <- final_predictions_best_1
+final_predictions <- final_predictions_best_2
 
 
 final_predictions <- final_predictions %>%
@@ -1936,7 +1938,7 @@ outcome_and_exposure_male <- as.formula(paste(outcome_model_male, "~", paste(exp
 
 fit_best_male <- train(outcome_and_exposure_male,       
                 data = data_train_male_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2046,7 +2048,7 @@ outcome_and_exposure_female <- as.formula(paste(outcome_model_female, "~", paste
 
 fit_best_female <- train(outcome_and_exposure_female,      
                 data = data_train_female_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2158,7 +2160,7 @@ outcome_and_exposure_adolescence <- as.formula(paste(outcome_model_adolescence, 
 
 fit_best_adolescence <- train(outcome_and_exposure_adolescence,  
                 data = data_train_adolescence_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2271,7 +2273,7 @@ outcome_and_exposure_youth <- as.formula(paste(outcome_model_youth, "~", paste(e
 
 fit_best_youth <- train(outcome_and_exposure_youth,
                 data = data_train_youth_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2384,7 +2386,7 @@ outcome_and_exposure_adulthood <- as.formula(paste(outcome_model_adulthood, "~",
 
 fit_best_adulthood <- train(outcome_and_exposure_adulthood,   
                 data = data_train_adulthood_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2496,7 +2498,7 @@ outcome_and_exposure_old_age <- as.formula(paste(outcome_model_old_age, "~", pas
 
 fit_best_old_age <- train(outcome_and_exposure_old_age,       
                 data = data_train_old_age_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2609,7 +2611,7 @@ outcome_and_exposure_teach_true <- as.formula(paste(outcome_model_teach_true, "~
 
 fit_best_teach_true <- train(outcome_and_exposure_teach_true,      
                 data = data_train_teach_true_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2722,7 +2724,7 @@ outcome_and_exposure_teach_false <- as.formula(paste(outcome_model_teach_false, 
 
 fit_best_teach_false <- train(outcome_and_exposure_teach_false,  
                 data = data_train_teach_false_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2835,7 +2837,7 @@ outcome_and_exposure_african_american <- as.formula(paste(outcome_model_african_
 
 fit_best_african_american <- train(outcome_and_exposure_african_american,    
                 data = data_train_african_american_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -2948,7 +2950,7 @@ outcome_and_exposure_asian <- as.formula(paste(outcome_model_asian, "~", paste(e
 
 fit_best_asian <- train(outcome_and_exposure_asian,    
                 data = data_train_asian_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3061,7 +3063,7 @@ outcome_and_exposure_caucasian <- as.formula(paste(outcome_model_caucasian, "~",
 
 fit_best_caucasian <- train(outcome_and_exposure_caucasian,   
                 data = data_train_caucasian_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3174,7 +3176,7 @@ outcome_and_exposure_hispanic <- as.formula(paste(outcome_model_hispanic, "~", p
 
 fit_best_hispanic <- train(outcome_and_exposure_hispanic,       
                 data = data_train_hispanic_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3287,7 +3289,7 @@ outcome_and_exposure_native_american <- as.formula(paste(outcome_model_native_am
 
 fit_best_native_american <- train(outcome_and_exposure_native_american,     
                 data = data_train_native_american_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
@@ -3400,7 +3402,7 @@ outcome_and_exposure_ethnicity_other <- as.formula(paste(outcome_model_ethnicity
 
 fit_best_ethnicity_other <- train(outcome_and_exposure_ethnicity_other,   
                 data = data_train_ethnicity_other_without_ID %>% as.data.frame(),
-                method = "xgbTree",
+                method = "rf",
                 trControl = fitControl,
                 verbose = F,
                 na.action = na.omit,
