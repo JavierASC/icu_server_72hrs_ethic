@@ -236,15 +236,7 @@ final_df_selected <- final_df_selected %>%
   select(patientunitstayid, LOS, icu_mortality_72hrs, age, sex, ethnicity, prev_dept_los_hrs, bicarbonate_clear, sodium_clear, respiratoryrate_clear, BUN_clear, nibp_diastolic_clear, nibp_systolic_clear, nibp_mean_clear, temperature_clear, glucose_clear, potassium_clear, hemoglobin_clear, calcium_clear, norepinephrine, phenylephrine, heparin, epinephrine, heartrate_clear, vasopressors_other_bin, hist_diabetes_bin, hist_chf_bin, hist_copd_bin, hist_cancer_bin, hist_renal_bin, final_charlson_score, CABG, Cardiac_arrest, CHF, CVA, Diabetic_ketoacidosis, MI, Rhythm_disturbance, Sepsis_renal, Sepsis_pulmonary, teachingstatus)
 
 
-# SELECTION OF PATIENTS BASED ON LENGHT OF STAY IN UCI (mortality prediction at 72h)
-
-# LOS values are in day (units)
-
-final_df_selected <- final_df_selected %>%
-  filter(LOS >= 0) %>%
-  filter(LOS <= 3)
-
-# Delete "LOS" column.
+# Delete "LOS" column (the same for Models A, B and C).
 
 final_df_selected <- final_df_selected %>%
   select(-LOS)
