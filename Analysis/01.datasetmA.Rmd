@@ -727,7 +727,24 @@ b <- as.numeric(nrow(dataframe_for_modeling))
 
 # 6. DATAFRAME MODIFICATIONS
 
-## 6.1 Correct values ">89"
+## 6.1 Filtering by Length of stay (mortality predictions at 72h)
+
+```{r message=FALSE, warning=FALSE}
+
+# Is the same filter for Models A, B and C 
+
+# LOS values are in day (units)
+
+dataframe_for_modeling <- dataframe_for_modeling %>%
+  filter(LOS >= 0) %>%
+  filter(LOS <= 3)
+
+c <- as.numeric(nrow(dataframe_for_modeling))
+
+```
+
+
+## 6.2 Correct values ">89"
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -762,12 +779,12 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 
 
 # Patients after Exclusion Criteria 1
-c <- as.numeric(nrow(dataframe_for_modeling))
+d <- as.numeric(nrow(dataframe_for_modeling))
 
 ```
 
 
-## 6.2 NA Corrections
+## 6.3 NA Corrections
 
 ```{r}
 
@@ -777,7 +794,7 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
   filter(!is.na(sex))
 
 # Patients after Exclusion Criteria 2
-d <- as.numeric(nrow(dataframe_for_modeling))
+e <- as.numeric(nrow(dataframe_for_modeling))
 
 
 # Remove NA from the variable icu_mortality_72hrs
@@ -832,7 +849,7 @@ dataframe_for_modeling$vasopressors_other_bin <- as.factor(dataframe_for_modelin
 ```
 
 
-## 6.3 icu_mortality_72hrs
+## 6.4 icu_mortality_72hrs
 
 ```{r}
 
@@ -845,7 +862,7 @@ dataframe_for_modeling$icu_mortality_72hrs <- as.factor(dataframe_for_modeling$i
 ```
 
 
-## 6.4 hospital
+## 6.5 hospital
 
 ```{r}
 
@@ -917,7 +934,7 @@ dataframe_for_modeling <- dataframe_for_modeling %>%
 ```
 
 
-## 6.5 ethnicity
+## 6.6 ethnicity
 
 ```{r}
 
@@ -968,14 +985,16 @@ digraph flowchart {
   node [shape = box, fontname = 'Arial', fontsize = 12, color = 'black'];
   ab [label = 'Initial number of ICU stays: %d'];
   b [label = 'Removal of NA in Lenght of stay: %d'];  
-  c [label = 'Filter age >=16: %d'];
-  d [label = 'Removal of NA in the sex variable: %d'];
+  c [label = 'Filter by Lenght of stay: %d'];
+  d [label = 'Filter age >=16: %d'];
+  e [label = 'Removal of NA in the sex variable: %d'];
 
   ab -> b;
   b -> c;
   c -> d;
+  d -> e;
 }
-", title, ab, b, c, d)
+", title, ab, b, c, d, e)
 
 
 # Flowchart
