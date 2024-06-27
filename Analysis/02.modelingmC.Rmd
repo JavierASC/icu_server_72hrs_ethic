@@ -824,6 +824,7 @@ ranger_F1 <-F1_Score(final_predictions_ranger$obs, final_predictions_ranger$pred
 Linda_F1 <-F1_Score(final_predictions_Linda$obs, final_predictions_Linda$pred)
 cforest_F1 <-F1_Score(final_predictions_cforest$obs, final_predictions_cforest$pred)
 
+
 # BALANCED ACCURACY
 
 gbm_BA <- matrix_gbm$byClass['Balanced Accuracy']
@@ -866,6 +867,81 @@ print(comparative_table)
 comparative_table_ordered <- comparative_table[order(comparative_table$Balanced_Accuracy, decreasing = TRUE),]
 
 print(comparative_table_ordered)
+
+#-------------------------------------------------------------------------------
+
+# MODEL UNCERTAINTY
+
+# This could help to choose the best model.
+
+# y: mean value; ymin: CI 95% lower bound; ymax:CI 95% upper bound
+
+uncertainty_lr <- mean_qi(fit_lr$resample$F1)
+uncertainty_cforest <- mean_qi(fit_cforest$resample$F1)
+uncertainty_lda <- mean_qi(fit_lda$resample$F1)
+uncertainty_kernelpls <- mean_qi(fit_kernelpls$resample$F1)
+uncertainty_Linda <- mean_qi(fit_Linda$resample$F1)
+uncertainty_gbm <- mean_qi(fit_gbm$resample$F1)
+uncertainty_xgb <- mean_qi(fit_xgb$resample$F1)
+uncertainty_ranger <- mean_qi(fit_ranger$resample$F1)
+uncertainty_rf <- mean_qi(fit_rf$resample$F1)
+uncertainty_ada <- mean_qi(fit_ada$resample$F1)
+
+
+# Models
+Models <- c("lr", "cforest", "lda", "kernelpls", "Linda", "gbm", "xgb", "ranger", "rf", "ada")
+
+# F1 mean
+
+mean_F1_lr <- round(pull(uncertainty_lr, y),3)
+mean_F1_cforest <- round(pull(uncertainty_cforest, y),3)
+mean_F1_lda <- round(pull(uncertainty_lda, y),3)
+mean_F1_kernelpls <- round(pull(uncertainty_kernelpls, y),3)
+mean_F1_Linda <- round(pull(uncertainty_Linda, y),3)
+mean_F1_gbm <- round(pull(uncertainty_gbm, y),3)
+mean_F1_xgb <- round(pull(uncertainty_xgb, y),3)
+mean_F1_ranger <- round(pull(uncertainty_ranger, y),3)
+mean_F1_rf <- round(pull(uncertainty_rf, y),3)
+mean_F1_ada <- round(pull(uncertainty_ada, y),3)
+
+F1_mean <- c(mean_F1_lr, mean_F1_cforest, mean_F1_lda, mean_F1_kernelpls, mean_F1_Linda, mean_F1_gbm, mean_F1_xgb, mean_F1_ranger, mean_F1_rf, mean_F1_ada)
+
+
+# F1 lower limit
+
+lower_F1_lr <- round(pull(uncertainty_lr, ymin),3)
+lower_F1_cforest <- round(pull(uncertainty_cforest, ymin),3)
+lower_F1_lda <- round(pull(uncertainty_lda, ymin),3)
+lower_F1_kernelpls <- round(pull(uncertainty_kernelpls, ymin),3)
+lower_F1_Linda <- round(pull(uncertainty_Linda, ymin),3)
+lower_F1_gbm <- round(pull(uncertainty_gbm, ymin),3)
+lower_F1_xgb <- round(pull(uncertainty_xgb, ymin),3)
+lower_F1_ranger <- round(pull(uncertainty_ranger, ymin),3)
+lower_F1_rf <- round(pull(uncertainty_rf, ymin),3)
+lower_F1_ada <- round(pull(uncertainty_ada, ymin),3)
+
+lower_limit <- c(lower_F1_lr, lower_F1_cforest, lower_F1_lda, lower_F1_kernelpls, lower_F1_Linda, lower_F1_gbm, lower_F1_xgb, lower_F1_ranger, lower_F1_rf, lower_F1_ada)
+
+# F1 upper limit
+
+upper_F1_lr <- round(pull(uncertainty_lr, ymax),3)
+upper_F1_cforest <- round(pull(uncertainty_cforest, ymax),3)
+upper_F1_lda <- round(pull(uncertainty_lda, ymax),3)
+upper_F1_kernelpls <- round(pull(uncertainty_kernelpls, ymax),3)
+upper_F1_Linda <- round(pull(uncertainty_Linda, ymax),3)
+upper_F1_gbm <- round(pull(uncertainty_gbm, ymax),3)
+upper_F1_xgb <- round(pull(uncertainty_xgb, ymax),3)
+upper_F1_ranger <- round(pull(uncertainty_ranger, ymax),3)
+upper_F1_rf <- round(pull(uncertainty_rf, ymax),3)
+upper_F1_ada <- round(pull(uncertainty_ada, ymax),3)
+
+upper_limit <- c(upper_F1_lr, upper_F1_cforest, upper_F1_lda, upper_F1_kernelpls, upper_F1_Linda, upper_F1_gbm, upper_F1_xgb, upper_F1_ranger, upper_F1_rf, upper_F1_ada)
+
+
+# Dataframe
+uncertainty_table <- data.frame(Models = Models, F1_mean = F1_mean, lower_limit = lower_limit, upper_limit = upper_limit)
+
+print(uncertainty_table)
 
 ```
 The model gbm has the best balanced accuracy, but there are other effective models.All models have a high performance F1, so to evaluate other models the confusion matrix and Specificity can be considered. Models rf and xgb are considered to be effective models.
@@ -4025,4 +4101,4 @@ data_test %>%
 
 ```
 
-After observing the predictions and due to the smaller uncertainty interval (higher precision), if only one model had to be selected, the rf model would be selected.
+After observing the predictions and due to the smaller uncertainty interval (higher precision), also taking into account the F1 parameter, the Balanced Accuracy and the confusion matrices, if only one model had to be selected, the rf model would be selected.
