@@ -84,6 +84,7 @@ library(modelr)
 library(tidybayes)
 library(ggpubr)
 library(ggsci)
+library(yardstick)
 
 ```
 
@@ -1321,81 +1322,66 @@ The same goes for the rest of the models.
 
 # PRECISION-RECALL CURVE
 
+In this section the optimal threshold is calculated.
+
 ```{r}
 
 # (Selected model 1)
 
-# Function to calculate precision and recall for different classification thresholds.
-calculate_precision_recall <- function(predictions, true_labels) {
-  df <- tibble(pred = predictions, true = true_labels)                   # 2 vectors: real observation and predictions.
-  
-  df <- df %>%                                      # Calculation of true positives (TP), false positives (FP) and false negatives (FN)
-    mutate(TP = ifelse(pred == 1 & true == 1, 1, 0),
-           FP = ifelse(pred == 1 & true == 0, 1, 0),
-           FN = ifelse(pred == 0 & true == 1, 1, 0))
-  
-  precision <- cumsum(df$TP) / (cumsum(df$TP) + cumsum(df$FP))   # Cumulative precision and recall for each classification threshold
-  recall <- cumsum(df$TP) / sum(df$true == 1)
-  
-  df <- tibble(threshold = predictions, precision = precision, recall = recall)   # 3 colums tibble
-  
-  return(df)
-}
-
-
-
-# Calculate precision and recall for different thresholds
-
-precision_recall_df1 <- calculate_precision_recall(final_predictions_best_1$pred, final_predictions_best_1$obs)
-
-
-# Precision versus recall graph
-
-ggplot(precision_recall_df1, aes(x = recall, y = precision)) +
-  geom_line() +
-  geom_point() +
-  labs(x = "Recall", y = "Precision") +
-  ggtitle("Precision vs. Recall Curve  MODEL 1 (xgb)")
-
+pr_curve(final_predictions_best_1, obs, Alive) %>%
+    ggplot(aes(x = recall, y = precision)) +
+    geom_path() +
+    theme_bw() +
+  geom_point(data = pr_curve(final_predictions_best_1, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.3, 0.4, 0.5)), size = 3) + labs(x = "Recall", y = "Precision") +
+  geom_label(aes(label = round(.threshold, 2)),
+                                                                                                                                                                              #fill = factor(.threshold),
+                                                                                                                                                                          col = "white", fill = "black", data = pr_curve(final_predictions_best_1, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.30, 0.40, 0.50)), vjust = 0, nudge_y = 0.0015) + theme(legend.position = "none") +
+labs(title = "PRECISION-RECALL CURVE OF THE MODEL 1 (xgb)")
 
 #-------------------------------------------------------------------------------
 
 # (Selected model 2)
 
-precision_recall_df2 <- calculate_precision_recall(final_predictions_best_2$pred, final_predictions_best_2$obs)
-
-ggplot(precision_recall_df2, aes(x = recall, y = precision)) +
-  geom_line() +
-  geom_point() +
-  labs(x = "Recall", y = "Precision") +
-  ggtitle("Precision vs. Recall Curve  MODEL 2 (rf)")
-
+pr_curve(final_predictions_best_2, obs, Alive) %>%
+    ggplot(aes(x = recall, y = precision)) +
+    geom_path() +
+    theme_bw() +
+  geom_point(data = pr_curve(final_predictions_best_2, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.3, 0.4, 0.5)), size = 3) + labs(x = "Recall", y = "Precision") +
+  geom_label(aes(label = round(.threshold, 2)),
+                                                                                                                                                                              #fill = factor(.threshold),
+                                                                                                                                                                          col = "white", fill = "black", data = pr_curve(final_predictions_best_2, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.30, 0.40, 0.50)), vjust = 0, nudge_y = 0.0015) + theme(legend.position = "none") +
+labs(title = "PRECISION-RECALL CURVE OF THE MODEL 2 (rf)")
 
 #-------------------------------------------------------------------------------
 
 # (Selected model 3)
 
-precision_recall_df3 <- calculate_precision_recall(final_predictions_best_3$pred, final_predictions_best_3$obs)
-
-ggplot(precision_recall_df3, aes(x = recall, y = precision)) +
-  geom_line() +
-  geom_point() +
-  labs(x = "Recall", y = "Precision") +
-  ggtitle("Precision vs. Recall Curve  MODEL 3 (gbm)")
+pr_curve(final_predictions_best_3, obs, Alive) %>%
+    ggplot(aes(x = recall, y = precision)) +
+    geom_path() +
+    theme_bw() +
+  geom_point(data = pr_curve(final_predictions_best_3, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.3, 0.4, 0.5)), size = 3) + labs(x = "Recall", y = "Precision") +
+  geom_label(aes(label = round(.threshold, 2)),
+                                                                                                                                                                              #fill = factor(.threshold),
+                                                                                                                                                                          col = "white", fill = "black", data = pr_curve(final_predictions_best_3, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.30, 0.40, 0.50)), vjust = 0, nudge_y = 0.0015) + theme(legend.position = "none") +
+labs(title = "PRECISION-RECALL CURVE OF THE MODEL 3 (gbm)")
 
 #-------------------------------------------------------------------------------
 
 # (Selected model 4)
 
-precision_recall_df4 <- calculate_precision_recall(final_predictions_best_4$pred, final_predictions_best_4$obs)
-
-ggplot(precision_recall_df4, aes(x = recall, y = precision)) +
-  geom_line() +
-  geom_point() +
-  labs(x = "Recall", y = "Precision") +
-  ggtitle("Precision vs. Recall Curve  MODEL 4 (ada)")
+pr_curve(final_predictions_best_4, obs, Alive) %>%
+    ggplot(aes(x = recall, y = precision)) +
+    geom_path() +
+    theme_bw() +
+  geom_point(data = pr_curve(final_predictions_best_4, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.3, 0.4, 0.5)), size = 3) + labs(x = "Recall", y = "Precision") +
+  geom_label(aes(label = round(.threshold, 2)),
+                                                                                                                                                                              #fill = factor(.threshold),
+                                                                                                                                                                          col = "white", fill = "black", data = pr_curve(final_predictions_best_4, obs, Alive) %>% filter(round(.threshold, 2) %in% c(0.30, 0.40, 0.50)), vjust = 0, nudge_y = 0.0015) + theme(legend.position = "none") +
+labs(title = "PRECISION-RECALL CURVE OF THE MODEL 3 (ada)")
 
 ```
+As anticipated in the previous section, the optimal threshold is 0.40
 
 
 # CHECK THE IMPORTANCE OF THE MODEL VARIABLES.
