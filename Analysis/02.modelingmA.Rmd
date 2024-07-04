@@ -3941,4 +3941,79 @@ data_test %>%
 
 ```
 
+## Cardiac_arrest
+
+```{r}
+
+# 1. rf
+
+# Cardiac_arrest
+data_test %>%
+  mutate(pred = data_plot_rf$y,
+         pred.lower = data_plot_rf$ymin,
+         pred.upper = data_plot_rf$ymax) %>%
+    dplyr::group_by(Cardiac_arrest) %>%
+    dplyr::summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  ggplot(aes(x = factor(Cardiac_arrest), y = pred.mean)) +
+  geom_jitter(aes(y = pred, col = factor(Cardiac_arrest)),
+              alpha = 0.07,
+              data = data_test %>%
+  mutate(pred = data_plot_rf$y,
+         pred.lower = data_plot_rf$ymin,
+         pred.upper = data_plot_rf$ymax)) +
+  geom_errorbar(aes(ymin = pred.low,
+                      ymax = pred.up,
+                    y = pred.mean), width = 0.1) +
+  geom_point(size = 4) +
+  theme_bw() +
+  labs(title= "rf",
+       y = "Predicted probability of death after 72 hours from ICU admission",
+       x = "Patient suffered a cardiac arrest",
+       col = "") +
+  scale_x_discrete(labels = c("No",
+                              "Yes")) +
+  theme(legend.position = "none") +
+  scale_color_lancet()
+
+#---
+
+# 2. xgb
+
+
+# Cardiac_arrest
+data_test %>%
+  mutate(pred = data_plot_xgb$y,
+         pred.lower = data_plot_xgb$ymin,
+         pred.upper = data_plot_xgb$ymax) %>%
+    dplyr::group_by(Cardiac_arrest) %>%
+    dplyr::summarise(pred.mean = mean(pred),
+            pred.low = mean(pred.lower),
+            pred.up = mean(pred.upper)) %>%
+  ungroup() %>%
+  ggplot(aes(x = factor(Cardiac_arrest), y = pred.mean)) +
+  geom_jitter(aes(y = pred, col = factor(Cardiac_arrest)),
+              alpha = 0.07,
+              data = data_test %>%
+  mutate(pred = data_plot_xgb$y,
+         pred.lower = data_plot_xgb$ymin,
+         pred.upper = data_plot_xgb$ymax)) +
+  geom_errorbar(aes(ymin = pred.low,
+                      ymax = pred.up,
+                    y = pred.mean), width = 0.1) +
+  geom_point(size = 4) +
+  theme_bw() +
+  labs(title= "xgb",
+       y = "Predicted probability of death after 72 hours from ICU admission",
+       x = "Patient suffered a cardiac arrest",
+       col = "") +
+  scale_x_discrete(labels = c("No",
+                              "Yes")) +
+  theme(legend.position = "none") +
+  scale_color_lancet()
+
+```
+
 After observing the predictions and due to the smaller uncertainty interval (higher precision), also taking into account the F1 parameter, the Balanced Accuracy and the confusion matrices, if only one model had to be selected, the rf model would be selected.
