@@ -1394,11 +1394,11 @@ final_predictions <- final_predictions %>%
 # PERFORMANCE MEASURES AT GLOBAL LEVEL
 
 ## sensitivity
-sens <- sensitivity(final_predictions$pred, final_predictions$obs,
+sens <- sensitivity_vec(final_predictions$pred, final_predictions$obs,
                     negative = "Alive")
 
 ## specificity
-spec <- specificity(final_predictions$pred, final_predictions$obs,
+spec <- specificity_vec(final_predictions$pred, final_predictions$obs,
                     positive = "Expire")
 
 ## precision
@@ -1406,7 +1406,7 @@ prec <- posPredValue(final_predictions$pred, final_predictions$obs,
                      negative = "Alive")
 
 ## recall
-recall <- sensitivity(final_predictions$pred, final_predictions$obs,
+recall <- sensitivity_vec(final_predictions$pred, final_predictions$obs,
                     negative = "Alive")
 
 ## Global F1-measure
@@ -1436,7 +1436,7 @@ prec_male <- posPredValue(final_subgroup$pred, final_subgroup$obs,
 
 ## recall
 
-recall_male <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_male <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1461,7 +1461,7 @@ prec_female <- posPredValue(final_subgroup$pred, final_subgroup$obs,
 
 ## recall
 
-recall_female <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_female <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1482,7 +1482,7 @@ prec_adol <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_adol <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_adol <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1502,7 +1502,7 @@ prec_youth <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_youth <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_youth <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1521,7 +1521,7 @@ prec_adult <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_adult <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_adult <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1540,7 +1540,7 @@ prec_older <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_older <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_older <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1560,7 +1560,7 @@ prec_afam <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_afam <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_afam <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1578,7 +1578,7 @@ prec_asian <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_asian <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_asian <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1596,7 +1596,7 @@ prec_cau <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_cau <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_cau <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1614,7 +1614,7 @@ prec_hisp <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_hisp <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_hisp <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1632,7 +1632,7 @@ prec_natam <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_natam <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_natam <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1650,7 +1650,7 @@ prec_other <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_other <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_other <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1670,7 +1670,7 @@ prec_teach <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_teach <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_teach <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
@@ -1688,7 +1688,7 @@ prec_nonteach <- posPredValue(final_subgroup$pred, final_subgroup$obs,
                      negative = "Alive")
 
 ## recall
-recall_nonteach <- sensitivity(final_subgroup$pred, final_subgroup$obs,
+recall_nonteach <- sensitivity_vec(final_subgroup$pred, final_subgroup$obs,
                     negative = "Alive")
 
 ## F1-measure
