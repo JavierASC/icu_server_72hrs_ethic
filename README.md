@@ -1,4 +1,4 @@
-# Predictive Model for Early ICU MOrtality using Machine Learning: An Integrated Approach to Bioethics and Decision-Support System
+# Predictive Model for Early ICU Mortality using Machine Learning: An Integrated Approach to Bioethics and Decision-Support System
 
 This is a study focused on **bioethics**, discussing the potential benefits of a **decision-support system** that helps clinicians to admit or not a patient in the ICU, and to remain a patient in the ICU or not.
 
