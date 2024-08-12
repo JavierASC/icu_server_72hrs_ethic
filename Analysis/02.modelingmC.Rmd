@@ -1330,7 +1330,7 @@ ggplot(importance2, aes(x = Overall, y = reorder(rownames(importance), Overall))
 
 ggplot(importance3, aes(x = Overall, y = reorder(rownames(importance), Overall))) +
   geom_bar(stat = "identity", width = 0.5, fill = "blue") +
-  labs(,
+  labs(title = "IMPORTANCE OF THE MODEL 3 (xgb) VARIABLES",
        x = "Variables",
        y = "Relative importance (%)") +
   theme_minimal() +
